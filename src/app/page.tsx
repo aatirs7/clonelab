@@ -40,7 +40,8 @@ export default async function HomePage() {
           <p className="eyebrow">New run</p>
           <h1 className="panel-title">Start a run</h1>
           <p className="panel-hint">
-            Name the product and the angle. Everything after that is a click.
+            Pick a product from Kalodata, or name one yourself. The angle is yours either way,
+            since nothing in the data supplies it.
           </p>
 
           <div className="panel-body">
