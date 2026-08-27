@@ -1,21 +1,20 @@
 import Link from "next/link";
+import MoneyDashboard from "@/components/MoneyDashboard";
 import SignOutButton from "@/components/SignOutButton";
 import { requireOperator } from "@/lib/auth";
 import { formatCents } from "@/lib/cost";
-import { GOAL_CENTS, GOAL_DATE, moneySummary, runCostCents } from "@/lib/money";
+import { moneySummary, runCostCents, runEarnedCents } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
 export default async function MoneyPage() {
   await requireOperator();
   const summary = await moneySummary();
-  const total = summary.spentCents + summary.committedCents;
-  const pct = Math.min(100, (total / GOAL_CENTS) * 100);
 
   return (
     <div className="deck">
       <nav className="deck-rail">
-        <Link href="/" className="wordmark">
+        <Link href="/" className="wordmark" aria-label="CloneLab, back to all runs">
           Clone<span>Lab</span>
         </Link>
         <div className="rail-list">
@@ -34,59 +33,54 @@ export default async function MoneyPage() {
       </nav>
 
       <main className="deck-stage">
-        <div className="stage-inner">
-          <p className="eyebrow">Render spend</p>
-          <div className="figure" style={{ fontSize: "3.5rem" }}>{formatCents(total)}</div>
+        <div className="stage-inner" style={{ maxWidth: "44rem" }}>
+          <p className="eyebrow">Money</p>
+          <h1 className="panel-title">Earned against spend</h1>
           <p className="panel-hint">
-            {formatCents(summary.spentCents)} billed
-            {summary.committedCents > 0
-              ? `, ${formatCents(summary.committedCents)} committed and still rendering`
-              : ""}
-            . Against the {formatCents(GOAL_CENTS)} by {GOAL_DATE} goal.
+            The goal is a commission target, so progress is measured in what the videos earned.
+            Render spend is a cost line and moves the other way.
           </p>
 
-          <div className="prompter-bar" style={{ marginTop: "1.25rem" }}>
-            <div className="prompter-bar-fill" style={{ width: `${pct}%` }} />
+          <div className="dash-stack" style={{ marginTop: "2rem" }}>
+            <MoneyDashboard summary={summary} />
+
+            {summary.runsWithMoney.length > 0 ? (
+              <section className="card">
+                <div className="card-head">
+                  <span className="card-title">By run</span>
+                </div>
+                <div style={{ display: "grid", gap: "0.375rem" }}>
+                  {summary.runsWithMoney.map((run) => {
+                    const cost = runCostCents(run);
+                    const earned = runEarnedCents(run);
+                    const net = earned - cost;
+                    return (
+                      <Link key={run.id} href={`/runs/${run.id}`} className="run-item">
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          {run.productName}
+                          <br />
+                          <span className="tag">
+                            {run.resolution} · {run.seconds}s
+                            {run.actualCost === null && cost > 0 ? " · estimate, still rendering" : ""}
+                          </span>
+                        </span>
+                        <span style={{ textAlign: "right" }}>
+                          <span className="mono" style={{ color: net >= 0 ? "var(--ok)" : "var(--rec)" }}>
+                            {net >= 0 ? "" : "-"}
+                            {formatCents(Math.abs(net))}
+                          </span>
+                          <br />
+                          <span className="tag">
+                            {formatCents(earned)} in · {formatCents(cost)} out
+                          </span>
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
           </div>
-
-          {summary.byDay.length > 0 ? (
-            <div style={{ marginTop: "3rem" }}>
-              <p className="eyebrow">By day</p>
-              <div className="rows">
-                {summary.byDay.map((day) => (
-                  <div className="row" key={day.day} style={{ gridTemplateColumns: "1fr auto" }}>
-                    <span className="mono" style={{ fontSize: "0.8125rem", color: "var(--ink-dim)" }}>
-                      {day.day} · {day.runCount} render{day.runCount === 1 ? "" : "s"}
-                    </span>
-                    <span className="mono">{formatCents(day.cents)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {summary.runsWithSpend.length > 0 ? (
-            <div style={{ marginTop: "2rem" }}>
-              <p className="eyebrow">By run</p>
-              <div style={{ display: "grid", gap: "0.375rem" }}>
-                {summary.runsWithSpend.map((run) => (
-                  <Link key={run.id} href={`/runs/${run.id}`} className="run-item">
-                    <span>
-                      {run.productName}
-                      <br />
-                      <span className="tag">
-                        {run.resolution} · {run.seconds}s
-                        {run.actualCost === null ? " · estimate, still rendering" : ""}
-                      </span>
-                    </span>
-                    <span className="mono">{formatCents(runCostCents(run))}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="panel-hint" style={{ marginTop: "2rem" }}>Nothing rendered yet.</p>
-          )}
         </div>
       </main>
     </div>

@@ -312,60 +312,111 @@ export default function RunDeck({ run: initial, operatorAge }: { run: Run; opera
   );
 }
 
-/**
- * The estimator implements the formula fal publishes, but fal's own page also quotes a
- * per-second rate that does not reconcile with it, and the build spec quotes a third
- * number. Nothing settles that except a real bill, and the queue API does not report one.
- * So the operator reads it off the fal dashboard once and types it in here.
- */
-function ActualCost({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) => void }) {
-  const [value, setValue] = useState(run.actualCost !== null ? (run.actualCost / 100).toFixed(2) : "");
-  const [saved, setSaved] = useState(run.actualCost !== null);
+/** One editable money field, stored as integer cents. */
+function MoneyRow({
+  runId,
+  label,
+  field,
+  cents,
+  placeholder,
+  onPatch,
+}: {
+  runId: number;
+  label: string;
+  field: "actualCost" | "commissionEarned";
+  cents: number | null;
+  placeholder: string;
+  onPatch: (values: Partial<Run>) => void;
+}) {
+  const [value, setValue] = useState(cents !== null ? (cents / 100).toFixed(2) : "");
+  const [saved, setSaved] = useState(cents !== null);
 
   async function save() {
-    const cents = Math.round(Number(value) * 100);
-    if (!Number.isFinite(cents) || cents < 0) return;
-    await fetch(`/api/runs/${run.id}`, {
+    const next = Math.round(Number(value) * 100);
+    if (!Number.isFinite(next) || next < 0) return;
+    await fetch(`/api/runs/${runId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ actualCost: cents }),
+      body: JSON.stringify({ [field]: next }),
     });
     setSaved(true);
-    onPatch({ actualCost: cents });
+    onPatch({ [field]: next } as Partial<Run>);
   }
 
+  return (
+    <div className="row">
+      <span className="row-key">{label}</span>
+      <input
+        className="row-value mono"
+        inputMode="decimal"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+          setSaved(false);
+        }}
+      />
+      <button type="button" className="row-action" onClick={save} disabled={saved || !value}>
+        {saved ? "saved" : "save"}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The two numbers nothing in the pipeline can know.
+ *
+ * fal reports what a render cost but its queue API does not return the bill, and the
+ * published formula has three conflicting figures attached to it, so the estimate only
+ * gets calibrated by reading the real one off the dashboard. TikTok reports what a video
+ * earned, and the two systems never meet. Both are typed in here, once, per run.
+ */
+function RunLedger({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) => void }) {
   const estimated = run.estimatedCost;
-  const drift = saved && estimated && run.actualCost ? ((run.actualCost - estimated) / estimated) * 100 : null;
+  const drift =
+    run.actualCost !== null && estimated ? ((run.actualCost - estimated) / estimated) * 100 : null;
+  const net = (run.commissionEarned ?? 0) - (run.actualCost ?? 0);
+  const haveBoth = run.commissionEarned !== null && run.actualCost !== null;
 
   return (
     <div className="rows">
       <div className="row">
         <span className="row-key">Estimated</span>
-        <span className="mono">{formatCents(estimated)}</span>
+        <span className="mono" style={{ color: "var(--ink-dim)" }}>{formatCents(estimated)}</span>
         <span />
       </div>
-      <div className="row">
-        <span className="row-key">Billed</span>
-        <input
-          className="row-value mono"
-          inputMode="decimal"
-          placeholder="read it off fal"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setSaved(false);
-          }}
-        />
-        <button type="button" className="row-action" onClick={save} disabled={saved || !value}>
-          {saved ? "saved" : "save"}
-        </button>
-      </div>
+      <MoneyRow
+        runId={run.id}
+        label="Billed"
+        field="actualCost"
+        cents={run.actualCost}
+        placeholder="read it off fal"
+        onPatch={onPatch}
+      />
       {drift !== null ? (
         <div className="row">
           <span className="row-key">Drift</span>
           <span className="mono" style={{ color: Math.abs(drift) > 15 ? "var(--rec)" : "var(--ok)" }}>
             {drift > 0 ? "+" : ""}
             {drift.toFixed(0)}% against the estimate
+          </span>
+          <span />
+        </div>
+      ) : null}
+      <MoneyRow
+        runId={run.id}
+        label="Earned"
+        field="commissionEarned"
+        cents={run.commissionEarned}
+        placeholder="commission from TikTok"
+        onPatch={onPatch}
+      />
+      {haveBoth ? (
+        <div className="row">
+          <span className="row-key">Net</span>
+          <span className="mono" style={{ color: net >= 0 ? "var(--ok)" : "var(--rec)" }}>
+            {net >= 0 ? "" : "-"}
+            {formatCents(Math.abs(net))}
           </span>
           <span />
         </div>
@@ -382,8 +433,8 @@ function Finish({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) =>
   if (run.status !== "complete" || !run.resultUrl) {
     return (
       <p className="panel-hint" style={{ marginTop: 0 }}>
-        Once a render lands, the finished MP4 appears here to download, along with the field for
-        what fal actually billed.
+        Once a render lands, the finished MP4 appears here to download, along with the fields for
+        what fal actually billed and what the post earned.
       </p>
     );
   }
@@ -411,7 +462,7 @@ function Finish({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) =>
         </button>
       </div>
 
-      <ActualCost run={run} onPatch={onPatch} />
+      <RunLedger run={run} onPatch={onPatch} />
     </>
   );
 }

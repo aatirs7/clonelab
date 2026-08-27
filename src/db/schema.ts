@@ -88,6 +88,13 @@ export const runs = pgTable("runs", {
   // Integer cents. Floats drift once you start summing them for the money rollup.
   estimatedCost: integer("estimated_cost"),
   actualCost: integer("actual_cost"),
+  /*
+    Commission actually earned from the posted video, entered by hand at the finish step.
+    Nothing in the pipeline can know this: fal reports what a render cost, and TikTok
+    reports what a video earned, and the two never meet. Without it the money view could
+    only ever count spend, which made a cost line look like progress toward a revenue goal.
+  */
+  commissionEarned: integer("commission_earned"),
 
   posted: boolean("posted").notNull().default(false),
   postedAt: timestamp("posted_at", { withTimezone: true }),

@@ -1,38 +1,47 @@
 @import "tailwindcss";
 
 /*
-  CloneLab is a filming tool, so it is dressed like one: a broadcast deck. Deep warm
-  charcoal, a single amber signal accent, and mono for everything that is a number,
-  because in this app almost every number is a timecode, a duration or a dollar amount
-  and those want to line up.
+  A working instrument panel, not a brand surface. Cool neutral greys, one blue for
+  anything interactive, and mono for every number, because in this app almost every
+  number is a timecode, a duration or a dollar amount and those want to line up.
 
-  House constraint from the spec: no pure white, no pure black. The ground is a warm
-  near-black and the ink is a warm off-white.
+  Chart hues are separate tokens from UI hues on purpose: --series-* appear only on chart
+  marks and their legend swatches, never on text or chrome. The pair was chosen by running
+  the palette validator rather than by eye. The obvious green/red for earned against spend
+  fails colour-vision separation (deutan dE 6.6); blue against magenta clears every check
+  with room to spare (protan dE 19.9, tritan 35.9).
+
+  House constraint: no pure white, no pure black.
 */
 :root {
-  --bg: #100f0d;
-  --surface: #191713;
-  --surface-2: #221f1a;
-  --surface-3: #2b2721;
-  --line: #2c2822;
-  --line-strong: #3d382f;
+  --bg: #0e1013;
+  --surface: #15181d;
+  --surface-2: #1b1f26;
+  --surface-3: #232830;
+  --line: #232830;
+  --line-strong: #333a45;
 
-  --ink: #f2eee6;
-  --ink-dim: #a49c8e;
-  --ink-faint: #6d665b;
+  --ink: #e9edf2;
+  --ink-dim: #98a2b0;
+  --ink-faint: #626c7a;
 
-  /* Signal amber. The one accent, used for the live step and nothing decorative. */
-  --accent: #e8a13c;
-  --accent-dim: #8a5f22;
-  --accent-glow: rgba(232, 161, 60, 0.14);
+  /* The one interactive colour. Active rail item, primary buttons, focus rings. */
+  --accent: #4c8dff;
+  --accent-dim: #2b5599;
+  --accent-glow: rgba(76, 141, 255, 0.13);
 
-  --rec: #d9553f;
-  --rec-glow: rgba(217, 85, 63, 0.13);
-  --ok: #6faa7c;
-  --ok-glow: rgba(111, 170, 124, 0.12);
+  /* Reserved status colours. Never reused as a chart series. */
+  --rec: #e5484d;
+  --rec-glow: rgba(229, 72, 77, 0.12);
+  --ok: #3ba776;
+  --ok-glow: rgba(59, 167, 118, 0.12);
 
-  --radius: 4px;
-  --ease: 200ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  /* Chart series. Validated pair, fixed order, never cycled. */
+  --series-earned: #4c8dff;
+  --series-spend: #e93d82;
+
+  --radius: 5px;
+  --ease: 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 @theme inline {
@@ -58,17 +67,6 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  /*
-    A faint scanline wash. Barely visible, but it stops the large dark panels reading as
-    flat black rectangles and gives the whole thing the texture of a monitor.
-  */
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.012) 0px,
-    rgba(255, 255, 255, 0.012) 1px,
-    transparent 1px,
-    transparent 3px
-  );
 }
 
 .mono {
@@ -401,25 +399,25 @@ body {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #17130c;
+  color: #08121f;
   font-weight: 650;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #f2ae4d;
-  border-color: #f2ae4d;
+  background: #6ba0ff;
+  border-color: #6ba0ff;
 }
 
 .btn-rec {
   background: var(--rec);
   border-color: var(--rec);
-  color: #1a0e0b;
+  color: #1c0405;
   font-weight: 650;
 }
 
 .btn-rec:hover:not(:disabled) {
-  background: #e56a55;
-  border-color: #e56a55;
+  background: #ec6a6e;
+  border-color: #ec6a6e;
 }
 
 .btn-quiet {
@@ -503,19 +501,19 @@ body {
 .note-warn {
   border-color: var(--accent);
   background: var(--accent-glow);
-  color: #f0c184;
+  color: #a8c6ff;
 }
 
 .note-rec {
   border-color: var(--rec);
   background: var(--rec-glow);
-  color: #eda392;
+  color: #f0a1a3;
 }
 
 .note-ok {
   border-color: var(--ok);
   background: var(--ok-glow);
-  color: #9ccfa7;
+  color: #8fd3b3;
 }
 
 /* ---------- beats ---------- */
@@ -600,7 +598,7 @@ body {
 
 .segmented button[data-on="true"] {
   background: var(--accent);
-  color: #17130c;
+  color: #08121f;
   font-weight: 600;
 }
 
@@ -648,7 +646,7 @@ body {
 .prompter {
   position: fixed;
   inset: 0;
-  background: #0b0a09;
+  background: #0b0d10;
   color: var(--ink);
   display: flex;
   align-items: center;
@@ -787,4 +785,154 @@ fieldset.panel-body {
 
 fieldset.panel-body:disabled {
   opacity: 0.72;
+}
+
+/* ---------- dashboard ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.125rem 1.25rem 1.25rem;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.625rem;
+}
+
+@media (max-width: 640px) {
+  .stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9375rem 1rem 1rem;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-top: 0.375rem;
+  line-height: 1.1;
+}
+
+.stat-sub {
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+  margin-top: 0.25rem;
+  line-height: 1.45;
+}
+
+.meter {
+  height: 8px;
+  background: var(--surface-3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--series-earned);
+  border-radius: 999px;
+  transition: width var(--ease);
+}
+
+/*
+  Identity is never colour alone: every series carries a legend swatch next to its name,
+  and the tooltip repeats both.
+*/
+.legend {
+  display: flex;
+  gap: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.legend span,
+.chart-tip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.legend i,
+.chart-tip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Axis text wears an ink token, never a series colour. */
+.chart-tick {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--ink-faint);
+}
+
+.chart-tip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+  display: grid;
+  gap: 0.1875rem;
+  pointer-events: none;
+  color: var(--ink);
+  min-width: 9rem;
+}
+
+.chart-tip strong {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink-dim);
+  font-weight: 400;
+}
+
+.chart-tip-sub {
+  color: var(--ink-faint);
+  font-size: 0.6875rem;
+}
+
+.dash-stack {
+  display: grid;
+  gap: 0.625rem;
 }

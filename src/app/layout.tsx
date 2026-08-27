@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#100f0d",
+  themeColor: "#0e1013",
   width: "device-width",
   initialScale: 1,
   // The teleprompter is read at arm's length while filming, so a stray pinch zoom

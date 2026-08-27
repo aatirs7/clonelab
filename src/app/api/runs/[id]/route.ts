@@ -19,6 +19,7 @@ const patch = z.object({
   // so the only way the estimator ever gets calibrated is the operator typing in the
   // real number once.
   actualCost: z.number().int().min(0).nullable().optional(),
+  commissionEarned: z.number().int().min(0).nullable().optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
