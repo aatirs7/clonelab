@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SignOutButton from "@/components/SignOutButton";
 import { requireOperator } from "@/lib/auth";
 import { formatCents } from "@/lib/cost";
 import { runCostCents } from "@/lib/money";
@@ -37,6 +38,9 @@ export default async function HomePage() {
             <span className="rail-num">02</span>
             Money
           </Link>
+        </div>
+        <div className="rail-footer">
+          <SignOutButton />
         </div>
       </nav>
 

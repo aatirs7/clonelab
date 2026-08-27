@@ -12,8 +12,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const COOKIE_NAME = "clonelab_session";
 
-// Safari caps persistent cookies near this, so asking for more just gets truncated.
-const MAX_AGE_SECONDS = 400 * 24 * 60 * 60;
+/*
+  Thirty days, not the 400 a "remember me forever" cookie would use. A 400 day session on
+  a shared browser profile is indistinguishable from having no auth at all: you sign in
+  once and the app never asks again, on any route, for over a year.
+*/
+const MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 function secret(): string {
   const value = process.env.AUTH_SECRET;

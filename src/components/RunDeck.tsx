@@ -11,6 +11,7 @@ import CharacterBlock from "./CharacterBlock";
 import CopyButton from "./CopyButton";
 import PromptEditor from "./PromptEditor";
 import RenderStep from "./RenderStep";
+import SignOutButton from "./SignOutButton";
 import UploadStep from "./UploadStep";
 
 /**
@@ -211,6 +212,9 @@ export default function RunDeck({ run: initial, operatorAge }: { run: Run; opera
               {step.label}
             </button>
           ))}
+        </div>
+        <div className="rail-footer">
+          <SignOutButton />
         </div>
       </nav>
 
