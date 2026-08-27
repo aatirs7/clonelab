@@ -34,7 +34,7 @@ export default function UploadStep({
   onUploaded,
 }: {
   runId: number;
-  kind: "clip" | "still";
+  kind: "clip" | "still" | "result";
   currentUrl: string | null;
   currentSeconds?: number | null;
   onUploaded: (url: string, seconds?: number) => void;
@@ -56,8 +56,8 @@ export default function UploadStep({
         const seconds = await measureDuration(file);
         if (seconds < MIN_CLIP_SECONDS || seconds > MAX_CLIP_SECONDS) {
           setError(
-            `That clip is ${seconds.toFixed(1)}s. fal only accepts ${MIN_CLIP_SECONDS} to ${MAX_CLIP_SECONDS}s, ` +
-              "and input length is billed, so trim it before uploading.",
+            `That clip is ${seconds.toFixed(1)}s. Seedance only accepts ${MIN_CLIP_SECONDS} to ${MAX_CLIP_SECONDS}s of ` +
+              "source, so trim it before uploading.",
           );
           setBusy(false);
           return;
@@ -96,14 +96,14 @@ export default function UploadStep({
 
       {currentUrl && currentSeconds ? (
         <p className="tag" style={{ color: "var(--ok)" }}>
-          Uploaded · {currentSeconds.toFixed(1)}s · billed alongside the output
+          Uploaded · {currentSeconds.toFixed(1)}s · inside the 1.8 to 30.2s the model accepts
         </p>
       ) : null}
 
       <input
         ref={input}
         type="file"
-        accept={kind === "clip" ? "video/*" : "image/*"}
+        accept={kind === "still" ? "image/*" : "video/*"}
         style={{ display: "none" }}
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -121,7 +121,15 @@ export default function UploadStep({
           onClick={() => input.current?.click()}
           disabled={busy}
         >
-          {busy ? "Uploading" : currentUrl ? "Replace" : kind === "clip" ? "Choose clip" : "Choose still"}
+          {busy
+            ? "Uploading"
+            : currentUrl
+              ? "Replace"
+              : kind === "clip"
+                ? "Choose clip"
+                : kind === "still"
+                  ? "Choose still"
+                  : "Upload finished MP4"}
         </button>
       </div>
     </>

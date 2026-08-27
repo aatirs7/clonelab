@@ -936,3 +936,48 @@ fieldset.panel-body:disabled {
   display: grid;
   gap: 0.625rem;
 }
+
+/* ---------- handoff ---------- */
+
+.handoff {
+  display: grid;
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.handoff li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.handoff-num {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  color: var(--ink-dim);
+}
+
+.handoff-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* A fal storage URL is long and never worth reading, only copying. */
+.handoff-url {
+  font-size: 0.6875rem;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}

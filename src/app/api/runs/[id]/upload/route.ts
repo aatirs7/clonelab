@@ -25,8 +25,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const file = form?.get("file");
   const kind = form?.get("kind");
 
-  if (!(file instanceof Blob) || (kind !== "clip" && kind !== "still")) {
+  if (!(file instanceof Blob) || (kind !== "clip" && kind !== "still" && kind !== "result")) {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
+  }
+
+  // The finished MP4, brought back from Higgsfield by hand. Uploading it is what marks
+  // the run complete on the manual path, since nothing polls a queue there.
+  if (kind === "result") {
+    try {
+      const url = await uploadToFal(file);
+      await updateRun(id, { resultUrl: url, status: "complete", falError: null });
+      return NextResponse.json({ url });
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 502 });
+    }
   }
 
   if (kind === "clip") {

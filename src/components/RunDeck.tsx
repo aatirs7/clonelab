@@ -10,6 +10,7 @@ import BeatSheet from "./BeatSheet";
 import CharacterBlock from "./CharacterBlock";
 import CopyButton from "./CopyButton";
 import PromptEditor from "./PromptEditor";
+import HandoffStep from "./HandoffStep";
 import RenderStep from "./RenderStep";
 import SignOutButton from "./SignOutButton";
 import UploadStep from "./UploadStep";
@@ -28,7 +29,15 @@ import UploadStep from "./UploadStep";
  * written before filming, not after. The character still comes after filming too, because
  * the image pasted into ChatGPT is a screenshot of a frame that was actually shot.
  */
-export default function RunDeck({ run: initial, operatorAge }: { run: Run; operatorAge: number }) {
+export default function RunDeck({
+  run: initial,
+  operatorAge,
+  provider,
+}: {
+  run: Run;
+  operatorAge: number;
+  provider: "manual" | "fal";
+}) {
   const router = useRouter();
 
   /*
@@ -131,7 +140,7 @@ export default function RunDeck({ run: initial, operatorAge }: { run: Run; opera
       key: "clip",
       label: "Upload clip",
       title: "Upload the take",
-      hint: "Trim to just the take first. fal bills the input duration alongside the output, so a long file costs real money for nothing.",
+      hint: "Trim to just the take first. The model only accepts 1.8 to 30.2 seconds of source, and a long file makes the render slower for nothing.",
       done: hasClip,
       ready: true,
       body: (
@@ -209,12 +218,27 @@ export default function RunDeck({ run: initial, operatorAge }: { run: Run; opera
     {
       key: "render",
       label: "Render",
-      title: "Render it",
-      hint: "480p by default. Promote a take you already like to 720p, reusing the same prompt and inputs.",
+      title: provider === "fal" ? "Render it" : "Hand off to Higgsfield",
+      hint:
+        provider === "fal"
+          ? "480p by default. Promote a take you already like to 720p, reusing the same prompt and inputs."
+          : "The render runs on your Higgsfield subscription, so this step is a handoff. Take the prompt and the two files across, generate, then bring the MP4 back.",
       done: rendered,
       ready: hasClip && hasStill && Boolean(prompt),
-      needs: "Needs the source clip, the character still and a prompt. The estimate below still shows what it would cost.",
-      body: <RenderStep run={run} onChanged={refresh} />,
+      needs: "Needs the source clip, the character still and a prompt.",
+      body:
+        provider === "fal" ? (
+          <RenderStep run={run} onChanged={refresh} />
+        ) : (
+          <HandoffStep
+            run={run}
+            prompt={prompt}
+            onUploaded={(url) => {
+              patch({ resultUrl: url, status: "complete" });
+              refresh();
+            }}
+          />
+        ),
     },
     {
       key: "finish",
@@ -224,7 +248,7 @@ export default function RunDeck({ run: initial, operatorAge }: { run: Run; opera
       done: run.posted,
       ready: rendered || run.status === "failed",
       needs: "Nothing has finished rendering yet.",
-      body: <Finish run={run} onPatch={(values) => { patch(values); refresh(); }} />,
+      body: <Finish run={run} onPatch={(values) => { patch(values); refresh(); }} provider={provider} />,
     },
   ];
 
@@ -371,7 +395,15 @@ function MoneyRow({
  * gets calibrated by reading the real one off the dashboard. TikTok reports what a video
  * earned, and the two systems never meet. Both are typed in here, once, per run.
  */
-function RunLedger({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) => void }) {
+function RunLedger({
+  run,
+  onPatch,
+  provider,
+}: {
+  run: Run;
+  onPatch: (values: Partial<Run>) => void;
+  provider: "manual" | "fal";
+}) {
   const estimated = run.estimatedCost;
   const drift =
     run.actualCost !== null && estimated ? ((run.actualCost - estimated) / estimated) * 100 : null;
@@ -380,20 +412,22 @@ function RunLedger({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>)
 
   return (
     <div className="rows">
-      <div className="row">
-        <span className="row-key">Estimated</span>
-        <span className="mono" style={{ color: "var(--ink-dim)" }}>{formatCents(estimated)}</span>
-        <span />
-      </div>
+      {provider === "fal" ? (
+        <div className="row">
+          <span className="row-key">Estimated</span>
+          <span className="mono" style={{ color: "var(--ink-dim)" }}>{formatCents(estimated)}</span>
+          <span />
+        </div>
+      ) : null}
       <MoneyRow
         runId={run.id}
-        label="Billed"
+        label="Cost"
         field="actualCost"
         cents={run.actualCost}
-        placeholder="read it off fal"
+        placeholder={provider === "fal" ? "read it off fal" : "subscription share, or 0"}
         onPatch={onPatch}
       />
-      {drift !== null ? (
+      {provider === "fal" && drift !== null ? (
         <div className="row">
           <span className="row-key">Drift</span>
           <span className="mono" style={{ color: Math.abs(drift) > 15 ? "var(--rec)" : "var(--ok)" }}>
@@ -425,7 +459,15 @@ function RunLedger({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>)
   );
 }
 
-function Finish({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) => void }) {
+function Finish({
+  run,
+  onPatch,
+  provider,
+}: {
+  run: Run;
+  onPatch: (values: Partial<Run>) => void;
+  provider: "manual" | "fal";
+}) {
   if (run.status === "failed") {
     return <p className="note note-rec">{run.falError ?? "The render failed."}</p>;
   }
@@ -433,8 +475,8 @@ function Finish({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) =>
   if (run.status !== "complete" || !run.resultUrl) {
     return (
       <p className="panel-hint" style={{ marginTop: 0 }}>
-        Once a render lands, the finished MP4 appears here to download, along with the fields for
-        what fal actually billed and what the post earned.
+        Once the finished MP4 is uploaded on the previous step, it appears here to download, along
+        with the fields for what it cost and what the post earned.
       </p>
     );
   }
@@ -462,7 +504,7 @@ function Finish({ run, onPatch }: { run: Run; onPatch: (values: Partial<Run>) =>
         </button>
       </div>
 
-      <RunLedger run={run} onPatch={onPatch} />
+      <RunLedger run={run} onPatch={onPatch} provider={provider} />
     </>
   );
 }

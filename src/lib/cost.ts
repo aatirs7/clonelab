@@ -60,7 +60,10 @@ export function formatCents(cents: number | null | undefined): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-/** fal rejects source videos outside this window outright, so it is a hard gate. */
+/**
+ * Seedance rejects source videos outside this window outright, whichever provider fronts
+ * it, so it stays a hard gate on the manual Higgsfield path too.
+ */
 export const MIN_CLIP_SECONDS = 1.8;
 export const MAX_CLIP_SECONDS = 30.2;
 
