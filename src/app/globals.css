@@ -772,3 +772,19 @@ body {
   padding-top: 0.5rem;
   border-top: 1px solid var(--line);
 }
+
+/*
+  The stage wraps each step body in a fieldset so an unready step can be rendered in full
+  and still refuse every control inside it. Strip the browser's fieldset chrome, which
+  otherwise draws a box and forces a min width.
+*/
+fieldset.panel-body {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+fieldset.panel-body:disabled {
+  opacity: 0.72;
+}

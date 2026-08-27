@@ -1,32 +1,23 @@
 import Link from "next/link";
 import SignOutButton from "@/components/SignOutButton";
 import { requireOperator } from "@/lib/auth";
-import { formatCents } from "@/lib/cost";
 import { runCostCents } from "@/lib/money";
 import { listRuns } from "@/lib/runs";
 import NewRunForm from "@/components/NewRunForm";
+import RunList from "@/components/RunList";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "draft",
-  planned: "planned",
-  filmed: "filmed",
-  still_ready: "ready",
-  queued: "queued",
-  rendering: "rendering",
-  complete: "done",
-  failed: "failed",
-};
 
 export default async function HomePage() {
   await requireOperator();
   const runs = await listRuns();
 
+  const spendByRun = Object.fromEntries(runs.map((run) => [run.id, runCostCents(run)]));
+
   return (
     <div className="deck">
       <nav className="deck-rail">
-        <Link href="/" className="wordmark">
+        <Link href="/" className="wordmark" aria-label="CloneLab, back to all runs">
           Clone<span>Lab</span>
         </Link>
         <div className="rail-list">
@@ -58,18 +49,10 @@ export default async function HomePage() {
 
           {runs.length > 0 ? (
             <div style={{ marginTop: "3rem" }}>
-              <p className="eyebrow">{runs.length} run{runs.length === 1 ? "" : "s"}</p>
-              <div style={{ display: "grid", gap: "0.375rem" }}>
-                {runs.map((run) => (
-                  <Link key={run.id} href={`/runs/${run.id}`} className="run-item">
-                    <span>{run.productName}</span>
-                    <span className="tag">
-                      {STATUS_LABEL[run.status]}
-                      {runCostCents(run) > 0 ? ` · ${formatCents(runCostCents(run))}` : ""}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <p className="eyebrow">
+                {runs.length} run{runs.length === 1 ? "" : "s"}
+              </p>
+              <RunList runs={runs} spendByRun={spendByRun} />
             </div>
           ) : null}
         </div>
