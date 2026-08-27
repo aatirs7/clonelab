@@ -57,7 +57,7 @@ export default async function MoneyPage() {
                     return (
                       <Link key={run.id} href={`/runs/${run.id}`} className="run-item">
                         <span style={{ flex: 1, minWidth: 0 }}>
-                          {run.productName}
+                          {run.product.name}
                           <br />
                           <span className="tag">
                             {run.resolution} · {run.seconds}s

@@ -15,6 +15,20 @@
       "when": 1787866501419,
       "tag": "0001_lean_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787868019443,
+      "tag": "0002_smart_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787868089934,
+      "tag": "0003_spotty_miss_america",
+      "breakpoints": true
     }
   ]
 }

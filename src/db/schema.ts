@@ -1,5 +1,7 @@
 import {
   boolean,
+  doublePrecision,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -8,6 +10,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const runStatusEnum = pgEnum("run_status", [
@@ -50,18 +53,103 @@ export type Beat = {
   line: string | null;
 };
 
+
+/**
+ * Kalodata's category id to name map. Rank endpoints filter by category_ids but never
+ * return a category name, so the only way to label anything is to fetch the list once and
+ * keep it. Cached per region because the taxonomy differs by market.
+ */
+export const categories = pgTable(
+  "categories",
+  {
+    id: serial("id").primaryKey(),
+    categoryId: text("category_id").notNull(),
+    name: text("name").notNull(),
+    region: text("region").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("categories_region_id_idx").on(t.region, t.categoryId)],
+);
+
+/** The six component scores, kept alongside the raw inputs that produced each one. */
+export type ScoreComponent = {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  /** The bucket that was hit, in words, so a zero is explainable without rerunning anything. */
+  reason: string;
+};
+
+/**
+ * A product, as a record rather than a typed-in title.
+ *
+ * Everything from `region` down is a snapshot taken at pick time. Kalodata's numbers move
+ * daily, so a score computed last week cannot be recomputed or audited later unless the
+ * inputs that produced it were frozen with it. Whether a sample is on hand lives here too:
+ * that is a fact about the product, not about one run of it.
+ */
+export const products = pgTable(
+  "products",
+  {
+    id: serial("id").primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+    kalodataProductId: text("kalodata_product_id"),
+    name: text("name").notNull(),
+    categoryId: text("category_id"),
+    categoryName: text("category_name"),
+    hasSample: boolean("has_sample").notNull().default(false),
+
+    /* master_image_url from Kalodata, and a manual upload that overrides it when the
+       Kalodata image is poor or the product never came through the picker. */
+    imageUrl: text("image_url"),
+    uploadedImageUrl: text("uploaded_image_url"),
+
+    region: text("region"),
+    currency: text("currency"),
+    dateRange: text("date_range"),
+
+    revenue: doublePrecision("revenue"),
+    commissionRate: doublePrecision("commission_rate"),
+    salesVolumn: integer("sales_volumn"),
+    unitPrice: doublePrecision("unit_price"),
+    /* Only ever present on rank, never on detail, so it has to be captured during the
+       sweep. It cannot be backfilled afterwards. */
+    revenueGrowthRate: doublePrecision("revenue_growth_rate"),
+    liveRevenue: doublePrecision("live_revenue"),
+    videoRevenue: doublePrecision("video_revenue"),
+    showcaseRevenue: doublePrecision("showcase_revenue"),
+    launchDate: text("launch_date"),
+    sellerId: text("seller_id"),
+    sellerName: text("seller_name"),
+
+    scoreProfile: text("score_profile"),
+    scoreTotal: integer("score_total"),
+    scoreComponents: jsonb("score_components").$type<ScoreComponent[] | null>(),
+    scoreInputs: jsonb("score_inputs").$type<Record<string, unknown> | null>(),
+    pickedAt: timestamp("picked_at", { withTimezone: true }),
+  },
+  (t) => [index("products_kalodata_idx").on(t.kalodataProductId)],
+);
+
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
+export type NewCategory = typeof categories.$inferInsert;
+
 export const runs = pgTable("runs", {
   id: serial("id").primaryKey(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 
-  // Product fields are inlined until Affiliate Engine is wired in. When it is,
-  // externalProductId becomes the join and these become a denormalized snapshot.
-  productName: text("product_name").notNull(),
-  productCategory: text("product_category").notNull().default(""),
+  /* The product is a record now. Category and whether a sample is on hand come from it.
+     The angle stays on the run: it is a creative call about one video, and nothing in
+     Kalodata supplies it. */
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
   hookAngle: text("hook_angle").notNull().default(""),
-  hasSample: boolean("has_sample").notNull().default(false),
-  externalProductId: text("external_product_id"),
 
   character: jsonb("character").$type<Character | null>(),
   beats: jsonb("beats").$type<Beat[] | null>(),

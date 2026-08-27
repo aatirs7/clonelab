@@ -1,15 +1,36 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { runs, type NewRun, type Run } from "@/db/schema";
+import { products, runs, type NewRun, type Product, type Run } from "@/db/schema";
 
-export async function listRuns(): Promise<Run[]> {
-  return db.select().from(runs).orderBy(desc(runs.createdAt));
+/**
+ * A run with its product attached. The product carries the name, category and whether a
+ * sample is on hand; the run carries the angle. Almost everything that touches a run
+ * needs both, so joining once here beats every call site doing its own lookup.
+ */
+export type RunWithProduct = Run & { product: Product };
+
+function join(row: { runs: Run; products: Product }): RunWithProduct {
+  return { ...row.runs, product: row.products };
 }
 
-export async function getRun(id: number): Promise<Run | null> {
+export async function listRuns(): Promise<RunWithProduct[]> {
+  const rows = await db
+    .select()
+    .from(runs)
+    .innerJoin(products, eq(runs.productId, products.id))
+    .orderBy(desc(runs.createdAt));
+  return rows.map(join);
+}
+
+export async function getRun(id: number): Promise<RunWithProduct | null> {
   if (!Number.isFinite(id)) return null;
-  const [row] = await db.select().from(runs).where(eq(runs.id, id)).limit(1);
-  return row ?? null;
+  const [row] = await db
+    .select()
+    .from(runs)
+    .innerJoin(products, eq(runs.productId, products.id))
+    .where(eq(runs.id, id))
+    .limit(1);
+  return row ? join(row) : null;
 }
 
 export async function createRun(values: NewRun): Promise<Run> {

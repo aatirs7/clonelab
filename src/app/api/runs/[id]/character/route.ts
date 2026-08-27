@@ -44,8 +44,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (parsed.data.action === "generate") {
     try {
       const character = await generateCharacter({
-        productName: run.productName,
-        productCategory: run.productCategory,
+        productName: run.product.name,
+        productCategory: run.product.categoryName ?? "",
         hookAngle: run.hookAngle,
         operatorAge: Number(process.env.OPERATOR_AGE ?? 30) || 30,
       });
@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const value = await rerollCharacterField(
       parsed.data.field,
       parsed.data.character as Character,
-      run.productName,
+      run.product.name,
     );
     // age is the only numeric field, so a text reroll has to be coerced back.
     const coerced = parsed.data.field === "age" ? Number(value.replace(/\D/g, "")) || parsed.data.character.age : value;

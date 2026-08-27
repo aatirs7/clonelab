@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Run } from "@/db/schema";
+import type { RunWithProduct } from "@/lib/runs";
 import { formatCents } from "@/lib/cost";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -25,7 +25,13 @@ const STATUS_LABEL: Record<string, string> = {
  * Delete confirms in place rather than through window.confirm, which blocks the page and
  * cannot be styled. Two clicks, and the second one is labelled with what it will do.
  */
-export default function RunList({ runs, spendByRun }: { runs: Run[]; spendByRun: Record<number, number> }) {
+export default function RunList({
+  runs,
+  spendByRun,
+}: {
+  runs: RunWithProduct[];
+  spendByRun: Record<number, number>;
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState<number | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
@@ -48,7 +54,7 @@ export default function RunList({ runs, spendByRun }: { runs: Run[]; spendByRun:
               href={`/runs/${run.id}`}
               style={{ color: "inherit", textDecoration: "none", flex: 1, minWidth: 0 }}
             >
-              {run.productName}
+              {run.product.name}
             </Link>
             <span className="tag">
               {STATUS_LABEL[run.status]}
@@ -73,7 +79,7 @@ export default function RunList({ runs, spendByRun }: { runs: Run[]; spendByRun:
               <button
                 type="button"
                 className="row-action"
-                aria-label={`Delete the run for ${run.productName}`}
+                aria-label={`Delete the run for ${run.product.name}`}
                 onClick={() => setConfirming(run.id)}
               >
                 delete

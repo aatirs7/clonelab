@@ -50,10 +50,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (parsed.data.action === "generate") {
     try {
       beats = await generateBeats({
-        productName: run.productName,
-        productCategory: run.productCategory,
+        productName: run.product.name,
+        productCategory: run.product.categoryName ?? "",
         hookAngle: run.hookAngle,
-        hasSample: run.hasSample,
+        hasSample: run.product.hasSample,
         character: run.character,
       });
     } catch (error) {
@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const total = beats.reduce((sum, beat) => sum + beat.duration, 0);
   const issues = validateBeats(beats);
-  const productBeat = productEntersAtBeat(beats, run.productName);
+  const productBeat = productEntersAtBeat(beats, run.product.name);
   if (productBeat === null || productBeat > 2) {
     issues.push("The product is not clearly in frame by beat two.");
   }

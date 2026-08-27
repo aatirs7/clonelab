@@ -1,6 +1,8 @@
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
-import { runs, type Run } from "@/db/schema";
+import { products, runs, type Run } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import type { RunWithProduct } from "./runs";
 
 /**
  * Spend, earned, net.
@@ -37,7 +39,7 @@ export type MoneySummary = {
   goalCents: number;
   goalPct: number;
   daysLeft: number;
-  runsWithMoney: Run[];
+  runsWithMoney: RunWithProduct[];
   byDay: DayPoint[];
   /** Renders that cost money but have no earnings recorded yet. */
   unreportedCount: number;
@@ -55,7 +57,12 @@ export function runEarnedCents(run: Run): number {
 }
 
 export async function moneySummary(now: Date = new Date()): Promise<MoneySummary> {
-  const all = await db.select().from(runs).orderBy(desc(runs.createdAt));
+  const rows = await db
+    .select()
+    .from(runs)
+    .innerJoin(products, eq(runs.productId, products.id))
+    .orderBy(desc(runs.createdAt));
+  const all: RunWithProduct[] = rows.map((r) => ({ ...r.runs, product: r.products }));
 
   let spentCents = 0;
   let committedCents = 0;

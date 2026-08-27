@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test:cost": "tsx scripts/test-cost.mts"
+    "test:cost": "tsx scripts/test-cost.mts",
+    "test:scoring": "tsx scripts/test-scoring.mts",
+    "test": "npm run test:cost && npm run test:scoring"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

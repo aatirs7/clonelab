@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import type { Beat, Character, Run } from "@/db/schema";
+import type { RunWithProduct } from "@/lib/runs";
 import { formatCents } from "@/lib/cost";
 import { characterStillPrompt, editPrompt, STILL_INSTRUCTION } from "@/lib/prompts";
 import BeatSheet from "./BeatSheet";
@@ -34,7 +35,7 @@ export default function RunDeck({
   operatorAge,
   provider,
 }: {
-  run: Run;
+  run: RunWithProduct;
   operatorAge: number;
   provider: "manual" | "fal";
 }) {
@@ -291,7 +292,7 @@ export default function RunDeck({
       <main className="deck-stage">
         <div className="stage-inner">
           <p className="eyebrow">
-            {run.productName}
+            {run.product.name}
             {run.hookAngle ? ` / ${run.hookAngle}` : ""}
           </p>
           <h1 className="panel-title">{active.title}</h1>
