@@ -198,3 +198,91 @@ export const runs = pgTable("runs", {
 
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
+
+/**
+ * Reference creative saved against a run. There was nowhere in a run to keep the videos
+ * you are trying to learn from, so the shortlist is that place.
+ */
+export const referenceVideos = pgTable(
+  "reference_videos",
+  {
+    id: serial("id").primaryKey(),
+    runId: integer("run_id")
+      .notNull()
+      .references(() => runs.id, { onDelete: "cascade" }),
+    videoId: text("video_id").notNull(),
+    title: text("title"),
+    creatorHandle: text("creator_handle"),
+    revenue: doublePrecision("revenue"),
+    views: doublePrecision("views"),
+    aiVideo: boolean("ai_video").notNull().default(false),
+    ad: boolean("ad").notNull().default(false),
+    note: text("note"),
+    savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("reference_videos_run_video_idx").on(t.runId, t.videoId)],
+);
+
+/**
+ * Cached video/rank results per category and window.
+ *
+ * Sweeping every category is one rank call each, and the rank limit is ten per ten
+ * seconds, so this cannot run per page load. The cron refreshes it daily and every page
+ * load reads the cache.
+ */
+export const categoryVideoCache = pgTable(
+  "category_video_cache",
+  {
+    id: serial("id").primaryKey(),
+    categoryId: text("category_id").notNull(),
+    dateRange: text("date_range").notNull(),
+    region: text("region").notNull(),
+    videos: jsonb("videos").$type<unknown[]>().notNull(),
+    aiCount: integer("ai_count").notNull().default(0),
+    videoCount: integer("video_count").notNull().default(0),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("category_video_cache_idx").on(t.region, t.categoryId, t.dateRange)],
+);
+
+/** Shops the operator is watching for a spend push starting or stopping. */
+export const watchedShops = pgTable(
+  "watched_shops",
+  {
+    id: serial("id").primaryKey(),
+    shopId: text("shop_id").notNull(),
+    shopName: text("shop_name"),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("watched_shops_idx").on(t.shopId)],
+);
+
+/**
+ * One row per watched shop per day.
+ *
+ * ad_share is the headline: the proportion of a brand's earning videos that carry the ad
+ * flag. A brand boosting nearly everything is a brand whose affiliates get reach they did
+ * not pay for. The point of snapshotting daily is to catch that starting or stopping,
+ * which a single reading cannot show.
+ */
+export const shopAdSnapshots = pgTable(
+  "shop_ad_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    shopId: text("shop_id").notNull(),
+    day: text("day").notNull(),
+    adShare: doublePrecision("ad_share").notNull(),
+    videoCount: integer("video_count").notNull(),
+    adVideoCount: integer("ad_video_count").notNull(),
+    medianAdsRoas: doublePrecision("median_ads_roas"),
+    meanAdRevenueRatio: doublePrecision("mean_ad_revenue_ratio"),
+    meanAdViewRatio: doublePrecision("mean_ad_view_ratio"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("shop_ad_snapshots_idx").on(t.shopId, t.day)],
+);
+
+export type ReferenceVideo = typeof referenceVideos.$inferSelect;
+export type WatchedShop = typeof watchedShops.$inferSelect;
+export type ShopAdSnapshot = typeof shopAdSnapshots.$inferSelect;
+export type CategoryVideoCache = typeof categoryVideoCache.$inferSelect;

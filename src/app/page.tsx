@@ -25,8 +25,12 @@ export default async function HomePage() {
             <span className="rail-num">01</span>
             Runs
           </Link>
-          <Link href="/money" className="rail-item" style={{ textDecoration: "none" }}>
+          <Link href="/research" className="rail-item" style={{ textDecoration: "none" }}>
             <span className="rail-num">02</span>
+            Research
+          </Link>
+          <Link href="/money" className="rail-item" style={{ textDecoration: "none" }}>
+            <span className="rail-num">03</span>
             Money
           </Link>
         </div>
