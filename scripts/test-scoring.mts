@@ -37,12 +37,13 @@ check("commission bands", () => {
   assert.equal(scorePhaseOne(p, { unitPrice: 10, commissionRate: 10 }).total, 0);   // $1.00, <3
 });
 
+// Long enough to clear the six-solid-week bar that durability now requires.
 const rising = [
-  ...Array(30).fill(100),  // steady month
+  ...Array(60).fill(100),  // two steady months
   ...Array(7).fill(400),   // then a sharp week
 ];
 const declining = [
-  ...Array(30).fill(400),
+  ...Array(60).fill(400),
   ...Array(7).fill(50),
 ];
 
@@ -92,6 +93,18 @@ check("six criteria, 100 points, and every one is explained", () => {
   assert.equal(r.total, 100, `perfect inputs should be 100, got ${r.total}`);
   for (const c of r.components) assert.ok(c.reason.length > 0, `${c.key} has no reason`);
   assert.equal(r.band, "Strong");
+});
+
+check("a lone spike among noise weeks is not durability", () => {
+  // Taken from real API data: $82 across eleven scattered weeks, then $121k in one.
+  const spiky = [
+    11, ...Array(7).fill(0), 11, 0, 13, 0, 0, 0, 12, ...Array(19).fill(0),
+    35, ...Array(47).fill(0), 110476, 11358, 0, 0, 0, 0,
+  ];
+  const r = scoreFull(p, { unitPrice: 50, commissionRate: 20 },
+    { revenueTrend: spiky, creatorNumber7d: 5, creatorRevenues: [5000] });
+  const dur = r.components.find((c) => c.key === "durability")!;
+  assert.equal(dur.points, 2, `counting merely non-zero weeks scored this 6; got ${dur.reason}`);
 });
 
 check("bands", () => {

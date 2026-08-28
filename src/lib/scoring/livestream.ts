@@ -92,7 +92,11 @@ const growthAcceleration: Criterion<PhaseTwoInput> = {
 
     const recent7 = dailyRate(live, 7);
     const prior30 = dailyRate(live.slice(0, -7), 30);
-    if (prior30 === 0) return { points: 5, reason: "no earlier baseline to compare against" };
+    if (prior30 === 0) {
+      // Nothing to divide by. That is genuinely unknown rather than good or bad, so it
+      // lands in the flat bucket rather than being rewarded as infinite growth.
+      return { points: 5, reason: "no meaningful revenue in the prior 30 days to compare against" };
+    }
 
     // Both are daily rates, so the ratio is a like-for-like comparison of pace.
     const deltaPct = ((recent7 - prior30) / prior30) * 100;
@@ -104,7 +108,15 @@ const growthAcceleration: Criterion<PhaseTwoInput> = {
   },
 };
 
-/** Criterion 6, trend durability. Same array, bucketed into weeks. */
+/**
+ * Criterion 6, trend durability. Same array, bucketed into weeks.
+ *
+ * "Sustained" is counted in MATERIAL weeks, not merely non-zero ones. Real trend data is
+ * spiky and sparse: a product that took eighty dollars across eleven scattered weeks and
+ * then did a hundred and twenty thousand in one is a single spike, but counting non-zero
+ * weeks scored it as five weeks of durable demand. A week only counts if it reached a
+ * fifth of the product's own peak.
+ */
 const trendDurability: Criterion<PhaseTwoInput> = {
   key: "durability",
   label: "Trend durability",
@@ -115,19 +127,24 @@ const trendDurability: Criterion<PhaseTwoInput> = {
 
     const peak = Math.max(...weeks);
     const latest = weeks[weeks.length - 1];
+    const material = weeks.filter((w) => w >= peak * 0.2);
+    const pctOfPeak = Math.round((latest / peak) * 100);
     // Sustained means still near its own peak, not merely non-zero.
     const holding = latest >= peak * 0.5;
 
-    if (weeks.length >= 6 && holding) {
-      return { points: 10, reason: `${weeks.length} weeks, still at ${Math.round((latest / peak) * 100)}% of peak` };
+    if (material.length <= 1) {
+      return {
+        points: 2,
+        reason: `one big week out of ${weeks.length}, the rest are noise`,
+      };
     }
-    if (weeks.length >= 2 && weeks.length <= 4 && holding) {
-      return { points: 6, reason: `${weeks.length} weeks and rising` };
+    if (material.length >= 6 && holding) {
+      return { points: 10, reason: `${material.length} solid weeks, still at ${pctOfPeak}% of peak` };
     }
     if (!holding) {
-      return { points: 2, reason: `spiked then fell to ${Math.round((latest / peak) * 100)}% of peak` };
+      return { points: 2, reason: `spiked then fell to ${pctOfPeak}% of peak` };
     }
-    return { points: 6, reason: `${weeks.length} weeks, holding` };
+    return { points: 6, reason: `${material.length} solid weeks, holding at ${pctOfPeak}% of peak` };
   },
 };
 
