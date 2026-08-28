@@ -123,8 +123,6 @@ body {
 .stage-inner {
   width: 100%;
   max-width: 34rem;
-  /* Establishes the container the builder measures itself against. */
-  container-type: inline-size;
 }
 
 /* ---------- wordmark ---------- */
@@ -1131,15 +1129,10 @@ fieldset.panel-body:disabled {
 }
 
 /*
-  Collapses on the container, not the viewport. A wide screen with a narrow stage still
-  needs one column, and a media query cannot see that.
+  Collapsed on the viewport rather than on a container query. The builder breaks out of
+  the stage column, so its width is driven by the viewport, and a container query would
+  measure the 34rem stage it escaped and collapse it on every screen size.
 */
-@container (max-width: 880px) {
-  .builder {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 @media (max-width: 900px) {
   .builder {
     grid-template-columns: minmax(0, 1fr);
