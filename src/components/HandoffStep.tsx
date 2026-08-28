@@ -45,17 +45,17 @@ export default function HandoffStep({
           <div>
             <p className="handoff-title">Take the two inputs</p>
             <p className="stat-sub">
-              [Video1] is the take you filmed. [Image1] is the character still. Higgsfield wants them
-              in that order.
+              @Video1 is the take you filmed and controls all the motion. @Image1 is the character
+              still and controls identity. Add them in that order.
             </p>
             <div className="rows" style={{ marginTop: "0.625rem" }}>
               <div className="row">
-                <span className="row-key">Video1</span>
+                <span className="row-key">@Video1</span>
                 <span className="mono handoff-url">{run.sourceClipUrl ?? "not uploaded yet"}</span>
                 {run.sourceClipUrl ? <CopyChip text={run.sourceClipUrl} /> : <span />}
               </div>
               <div className="row">
-                <span className="row-key">Image1</span>
+                <span className="row-key">@Image1</span>
                 <span className="mono handoff-url">{run.characterStillUrl ?? "not uploaded yet"}</span>
                 {run.characterStillUrl ? <CopyChip text={run.characterStillUrl} /> : <span />}
               </div>
@@ -67,10 +67,30 @@ export default function HandoffStep({
           <span className="handoff-num">3</span>
           <div>
             <p className="handoff-title">Generate on Higgsfield</p>
-            <p className="stat-sub">
-              Seedance 2.5 reference to video, 9:16, {run.seconds}s, and turn generated audio off.
-              The model would otherwise replace your voice with a synthetic one, which is the whole
-              reason this looks better than text to video.
+            <div className="rows" style={{ marginTop: "0.625rem" }}>
+              {[
+                ["Model", "Seedance 2.5 Edit"],
+                ["Mode", "Prompt"],
+                ["Resolution", "1080p"],
+                ["Bitrate", "High"],
+                ["Sound", "Off"],
+              ].map(([k, v]) => (
+                <div className="row" key={k} style={{ gridTemplateColumns: "7rem 1fr" }}>
+                  <span className="row-key">{k}</span>
+                  <span className="mono">{v}</span>
+                </div>
+              ))}
+            </div>
+            <p className="stat-sub" style={{ marginTop: "0.625rem" }}>
+              Sound off is not a style choice. It keeps each generation focused on what actually
+              fails, which is motion, face, hands, product and clothing. It also stops the model
+              replacing your voice with a synthetic one, which is the whole reason this beats text
+              to video.
+            </p>
+            <p className="note note-warn" style={{ marginTop: "0.625rem" }}>
+              Attach both references before pasting anything, and bind them through the @ menu so
+              the reference chips actually appear. Typing the text @Video1 without binding it
+              leaves the prompt pointing at nothing.
             </p>
             <div className="btn-row" style={{ marginTop: "0.625rem" }}>
               <a

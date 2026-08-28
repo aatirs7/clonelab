@@ -208,6 +208,13 @@ export const runs = pgTable("runs", {
      alongside the render instead of the raw voice. */
   voicedAudioUrl: text("voiced_audio_url"),
 
+  /*
+    The pre-export checklist. Stored rather than kept in component state because it gates
+    marking a run posted, and the whole reason it exists is that it is the easiest step in
+    the process to skip.
+  */
+  finishChecks: jsonb("finish_checks").$type<string[]>().notNull().default([]),
+
   posted: boolean("posted").notNull().default(false),
   postedAt: timestamp("posted_at", { withTimezone: true }),
 });

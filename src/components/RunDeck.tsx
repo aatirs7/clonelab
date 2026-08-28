@@ -17,6 +17,8 @@ import {
 import BeatSheet from "./BeatSheet";
 import CharacterBlock from "./CharacterBlock";
 import CopyButton from "./CopyButton";
+import FinishChecklist, { CHECKS } from "./FinishChecklist";
+import StartFrame from "./StartFrame";
 import PromptEditor from "./PromptEditor";
 import HandoffStep from "./HandoffStep";
 import RenderStep from "./RenderStep";
@@ -167,6 +169,25 @@ export default function RunDeck({
       needs: "Write the beat sheet first. The teleprompter has nothing to count through without it.",
       body: hasBeats ? (
         <>
+          {/* An unstable reference gives the model too much unstable information to track,
+              and instability in the input becomes flicker in the output. There is no
+              prompting your way out of a shaky source clip, so these belong here, at
+              capture time, rather than in the review step where it is already too late. */}
+          <div className="rows">
+            <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+              <span className="row-key">What makes a usable take</span>
+            </div>
+            {[
+              "Camera stays still, ideally propped rather than held",
+              "You are sharp and well lit, with no motion blur",
+              "Background does not move or change",
+              "Framing is identical from the first frame to the last",
+            ].map((rule) => (
+              <div className="row" key={rule} style={{ gridTemplateColumns: "1fr" }}>
+                <span className="stat-sub" style={{ marginTop: 0, textAlign: "left" }}>{rule}</span>
+              </div>
+            ))}
+          </div>
           {!hasSample ? <p className="note note-warn">{NO_SAMPLE_FILMING_NOTE}</p> : null}
           <Link href={`/runs/${run.id}/teleprompter`} className="btn btn-rec" style={{ textDecoration: "none" }}>
             Open teleprompter
@@ -211,6 +232,8 @@ export default function RunDeck({
       body: (
         <>
           <p className="note note-warn">{hasSample ? STILL_INSTRUCTION : COMPOSITE_INSTRUCTION}</p>
+
+          <StartFrame clipUrl={run.sourceClipUrl} />
 
           {/* Read only replay of whatever the builder produced on step 1, so the still is
               generated from the same text that was saved rather than a fresh roll. */}
@@ -638,6 +661,12 @@ function Finish({
   return (
     <>
       <video src={run.resultUrl} controls playsInline className="thumb" style={{ maxWidth: "13rem" }} />
+      <FinishChecklist
+        runId={run.id}
+        checked={run.finishChecks ?? []}
+        onChange={(next) => onPatch({ finishChecks: next })}
+      />
+
       <div className="btn-row">
         <a href={run.resultUrl} download className="btn btn-primary" style={{ textDecoration: "none" }}>
           Download MP4
@@ -645,6 +674,12 @@ function Finish({
         <button
           type="button"
           className="btn"
+          disabled={!run.posted && (run.finishChecks ?? []).length < CHECKS.length}
+          title={
+            !run.posted && (run.finishChecks ?? []).length < CHECKS.length
+              ? "Work through the checklist first"
+              : undefined
+          }
           onClick={async () => {
             await fetch(`/api/runs/${run.id}`, {
               method: "PATCH",

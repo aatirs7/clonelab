@@ -29,6 +29,7 @@ const patch = z.object({
   renderPromptStrictness: z.string().nullable().optional(),
   renderPromptExtra: z.string().nullable().optional(),
   renderPrompt: z.string().nullable().optional(),
+  finishChecks: z.array(z.string()).optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
