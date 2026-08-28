@@ -55,7 +55,7 @@ function envelope<T extends z.ZodTypeAny>(dataSchema: T) {
     data: dataSchema.nullish(),
     message: z.string().nullish(),
     code: z.string().nullish(),
-    cached: z.boolean().nullish(),
+    cached: boolish,
   });
 }
 
@@ -103,6 +103,34 @@ async function call<T extends z.ZodTypeAny>(
 
 /* ------------------------------------------------------------------ schemas */
 
+/*
+  This API is inconsistent about JSON types. creator/rank returns content_views and
+  creator_followers as strings while every other numeric field on the same row is a
+  number, and there is no way to know from the docs which fields do that. Rather than
+  chase them one at a time as each new endpoint trips the parser, every numeric field is
+  read through a coercion that accepts either and turns anything unparseable into null.
+*/
+const numish = z
+  .preprocess((v) => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = typeof v === "string" ? Number(v) : v;
+    return typeof n === "number" && Number.isFinite(n) ? n : null;
+  }, z.number().nullable())
+  .nullish();
+
+/** Same problem, same fix, for flags that may arrive as "true" or 1. */
+const boolish = z
+  .preprocess((v) => {
+    if (v === null || v === undefined || v === "") return null;
+    if (typeof v === "boolean") return v;
+    if (typeof v === "number") return v !== 0;
+    if (typeof v === "string") return v === "true" || v === "1";
+    return null;
+  }, z.boolean().nullable())
+  .nullish();
+
+
+
 /**
  * Their misspelling, kept verbatim. Renaming it here would mean a silent undefined the
  * first time anyone reads the field straight off a response.
@@ -110,14 +138,14 @@ async function call<T extends z.ZodTypeAny>(
 export const ProductRankRow = z.object({
   product_id: z.string(),
   product_name: z.string(),
-  revenue: z.number().nullish(),
-  commission_rate: z.number().nullish(),
-  revenue_growth_rate: z.number().nullish(),
-  sales_volumn: z.number().nullish(),
-  unit_price: z.number().nullish(),
-  live_revenue: z.number().nullish(),
-  video_revenue: z.number().nullish(),
-  showcase_revenue: z.number().nullish(),
+  revenue: numish,
+  commission_rate: numish,
+  revenue_growth_rate: numish,
+  sales_volumn: numish,
+  unit_price: numish,
+  live_revenue: numish,
+  video_revenue: numish,
+  showcase_revenue: numish,
   launch_date: z.string().nullish(),
   master_image_url: z.string().nullish(),
   seller_id: z.string().nullish(),
@@ -133,22 +161,22 @@ export const ProductDetail = z.object({
   pri_cate_id: z.string().nullish(),
   sec_cate_id: z.string().nullish(),
   ter_cate_id: z.string().nullish(),
-  revenue: z.number().nullish(),
-  video_revenue: z.number().nullish(),
-  live_revenue: z.number().nullish(),
-  sales_volumn: z.number().nullish(),
-  creator_number: z.number().nullish(),
-  video_number: z.number().nullish(),
-  live_number: z.number().nullish(),
-  commission_rate: z.number().nullish(),
-  unit_price: z.number().nullish(),
-  max_price: z.number().nullish(),
-  min_price: z.number().nullish(),
-  product_review_count: z.number().nullish(),
+  revenue: numish,
+  video_revenue: numish,
+  live_revenue: numish,
+  sales_volumn: numish,
+  creator_number: numish,
+  video_number: numish,
+  live_number: numish,
+  commission_rate: numish,
+  unit_price: numish,
+  max_price: numish,
+  min_price: numish,
+  product_review_count: numish,
   launch_date: z.string().nullish(),
   master_image_url: z.string().nullish(),
   delivery_type: z.string().nullish(),
-  shopping_mall_revenue: z.number().nullish(),
+  shopping_mall_revenue: numish,
   /*
     One revenue figure per day, oldest first. Not objects with dates, despite what the
     field name suggests: it is a bare number[] whose length equals the day count of the
@@ -160,7 +188,7 @@ export const ProductDetail = z.object({
     the field is absent entirely, and every growth and durability score would silently be
     computed from nothing.
   */
-  revenue_trend: z.array(z.number()).nullish(),
+  revenue_trend: z.array(z.union([z.number(), z.string()]).transform(Number)).nullish(),
 });
 export type ProductDetail = z.infer<typeof ProductDetail>;
 
@@ -168,13 +196,13 @@ export const CreatorRankRow = z.object({
   creator_id: z.string(),
   creator_nickname: z.string().nullish(),
   creator_handle: z.string().nullish(),
-  revenue: z.number().nullish(),
-  revenue_growth_rate: z.number().nullish(),
-  content_views: z.number().nullish(),
-  creator_followers: z.number().nullish(),
-  sales_volumn: z.number().nullish(),
-  video_revenue: z.number().nullish(),
-  live_revenue: z.number().nullish(),
+  revenue: numish,
+  revenue_growth_rate: numish,
+  content_views: numish,
+  creator_followers: numish,
+  sales_volumn: numish,
+  video_revenue: numish,
+  live_revenue: numish,
 });
 export type CreatorRankRow = z.infer<typeof CreatorRankRow>;
 
@@ -183,34 +211,34 @@ export const VideoRankRow = z.object({
   video_title: z.string().nullish(),
   belonged_creator_id: z.string().nullish(),
   belonged_creator_handle: z.string().nullish(),
-  revenue: z.number().nullish(),
-  views: z.number().nullish(),
-  revenue_growth_rate: z.number().nullish(),
-  ads_roas: z.number().nullish(),
-  digg_count: z.number().nullish(),
-  share_count: z.number().nullish(),
-  comment_count: z.number().nullish(),
-  ad_revenue_ratio: z.number().nullish(),
-  ad_view_ratio: z.number().nullish(),
-  creator_debut: z.boolean().nullish(),
-  ad: z.boolean().nullish(),
-  ai_video: z.boolean().nullish(),
+  revenue: numish,
+  views: numish,
+  revenue_growth_rate: numish,
+  ads_roas: numish,
+  digg_count: numish,
+  share_count: numish,
+  comment_count: numish,
+  ad_revenue_ratio: numish,
+  ad_view_ratio: numish,
+  creator_debut: boolish,
+  ad: boolish,
+  ai_video: boolish,
 });
 export type VideoRankRow = z.infer<typeof VideoRankRow>;
 
 export const CategoryRankRow = z.object({
   category_id: z.string(),
   category_name: z.string().nullish(),
-  revenue: z.number().nullish(),
+  revenue: numish,
 });
 export type CategoryRankRow = z.infer<typeof CategoryRankRow>;
 
 export const ShopRankRow = z.object({
   shop_id: z.string(),
   shop_name: z.string().nullish(),
-  revenue: z.number().nullish(),
-  sales_volumn: z.number().nullish(),
-  product_number: z.number().nullish(),
+  revenue: numish,
+  sales_volumn: numish,
+  product_number: numish,
 });
 export type ShopRankRow = z.infer<typeof ShopRankRow>;
 
