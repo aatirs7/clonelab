@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "test:cost": "tsx scripts/test-cost.mts",
     "test:scoring": "tsx scripts/test-scoring.mts",
-    "test": "npm run test:cost && npm run test:scoring"
+    "test": "npm run test:cost && npm run test:scoring && npm run test:prompt",
+    "test:prompt": "tsx scripts/test-prompt.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",
