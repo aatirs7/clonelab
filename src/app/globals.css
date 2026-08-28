@@ -123,6 +123,8 @@ body {
 .stage-inner {
   width: 100%;
   max-width: 34rem;
+  /* Establishes the container the builder measures itself against. */
+  container-type: inline-size;
 }
 
 /* ---------- wordmark ---------- */
@@ -1113,16 +1115,36 @@ fieldset.panel-body:disabled {
 
 /* ---------- prompt builders ---------- */
 
+/*
+  The builder breaks out wider than the stage column it sits in. The stage is sized for
+  prose at around 34rem, and the reference layout needs 360px of controls plus a readable
+  prompt column beside them, which does not fit in that measure. The negative inline
+  margin widens the block while leaving it centered on the same axis as everything else.
+*/
 .builder {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
+  width: min(62rem, calc(100vw - 3rem));
+  margin-inline: calc(50% - min(31rem, calc(50vw - 1.5rem)));
+}
+
+/*
+  Collapses on the container, not the viewport. A wide screen with a narrow stage still
+  needs one column, and a media query cannot see that.
+*/
+@container (max-width: 880px) {
+  .builder {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 900px) {
   .builder {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    margin-inline: 0;
   }
 }
 
@@ -1153,6 +1175,7 @@ fieldset.panel-body:disabled {
 }
 
 .builder-toolbar {
+  flex-wrap: wrap;
   min-height: 62px;
   padding: 0 18px;
   border-bottom: 1px solid var(--line);
