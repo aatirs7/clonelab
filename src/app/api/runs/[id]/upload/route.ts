@@ -3,6 +3,7 @@ import { isSignedIn } from "@/lib/auth";
 import { MAX_CLIP_SECONDS, MIN_CLIP_SECONDS } from "@/lib/cost";
 import { uploadToFal } from "@/lib/fal";
 import { getRun, updateRun } from "@/lib/runs";
+import { updateProduct } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 // Uploading a source clip over a slow connection outlasts the default limit.
@@ -25,8 +26,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const file = form?.get("file");
   const kind = form?.get("kind");
 
-  if (!(file instanceof Blob) || (kind !== "clip" && kind !== "still" && kind !== "result")) {
+  const kinds = ["clip", "still", "result", "product"];
+  if (!(file instanceof Blob) || typeof kind !== "string" || !kinds.includes(kind)) {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
+  }
+
+  /*
+    A photograph of the real product, uploaded by hand. It overrides the Kalodata image,
+    because it only ever gets uploaded when that one was missing or too poor to composite
+    from. It lives on the product, not the run: it is the same object in every run.
+  */
+  if (kind === "product") {
+    try {
+      const url = await uploadToFal(file);
+      await updateProduct(run.productId, { uploadedImageUrl: url });
+      return NextResponse.json({ url });
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 502 });
+    }
   }
 
   // The finished MP4, brought back from Higgsfield by hand. Uploading it is what marks

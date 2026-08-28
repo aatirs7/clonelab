@@ -1,4 +1,4 @@
-import type { Beat, Character } from "@/db/schema";
+import type { Beat, Character, Product } from "@/db/schema";
 
 /**
  * The two prompt templates. Both are transcribed from the build spec and should stay
@@ -45,6 +45,8 @@ export function characterStillPrompt(character: Character): string {
   return paragraphs.join("\n\n");
 }
 
+const JOIN = "\n\n";
+
 function formatSeconds(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
@@ -63,8 +65,18 @@ export function beatsAsTimestamps(beats: Beat[]): string {
     .join(" ");
 }
 
+export const COMPOSITE_INSTRUCTION =
+  "You do not have this product in hand, so the still is a composite. Paste BOTH images into " +
+  "ChatGPT: your frame grab first, then the product photo. The model puts the real product into " +
+  "the grip your hands already made.";
+
+export const NO_SAMPLE_FILMING_NOTE =
+  "You do not have this product in hand. Hold something roughly its size and shape while you " +
+  "film. An empty hand, or a stand-in of the wrong size, gives a grip the composite cannot be " +
+  "fitted into afterwards.";
+
 /** The Seedance edit prompt, composed from the character block and the beat sheet. */
-export function editPrompt(character: Character, beats: Beat[]): string {
+export function editPrompt(character: Character, beats: Beat[], productName?: string): string {
   const paragraphs: string[] = [];
 
   paragraphs.push(
@@ -78,15 +90,66 @@ export function editPrompt(character: Character, beats: Beat[]): string {
     paragraphs.push(beatsAsTimestamps(beats));
   }
 
-  const product = character.product.trim() || "product";
+  // Named explicitly so the model has something concrete to hold constant. A generic
+  // "product" is much weaker instruction than the actual thing.
+  const product = character.product.trim() || productName?.trim() || "product";
   paragraphs.push(
-    `The ${product} stays exactly as it appears in [Video1], with the same label, angle and grip ` +
-      "in every frame. Keep the original room, background, props and lighting from [Video1] " +
-      "unchanged. Match the face, hair, build and clothing to [Image1] in every frame, with " +
-      "photorealistic skin texture and no stylization.",
+    `The ${product} stays exactly as it appears in [Video1] and [Image1], identical in shape, ` +
+      "color, label, text and proportions, with the same angle and grip in every single frame. " +
+      "Do not restyle it, relabel it, resize it or substitute it at any point. Keep the original " +
+      "room, background, props and lighting from [Video1] unchanged. Match the face, hair, build " +
+      "and clothing to [Image1] in every frame, with photorealistic skin texture and no " +
+      "stylization.",
   );
 
   return paragraphs.join("\n\n");
+}
+
+/**
+ * The no-sample variant. Two references instead of one: the operator's own frame grab and
+ * a real photograph of the real product.
+ *
+ * The product is composited, never invented. A model asked to generate a product from a
+ * text description produces something that looks plausible and is not the thing being
+ * sold, with the wrong label and the wrong proportions, which is worse than useless for
+ * an affiliate video.
+ */
+export function compositeStillPrompt(character: Character, product: Product): string {
+  const paragraphs: string[] = [];
+
+  const named = product.name.trim();
+  paragraphs.push(
+    "Use two reference images. [Image1] is the source frame. [Image2] is a photograph of the " +
+      `real product, ${named}.`,
+  );
+
+  paragraphs.push(
+    `In [Image1], remove the person and replace them with a ${character.age}-year-old adult ` +
+      `${character.gender} ${character.profession}, ${character.build} build, ${character.hair}, ` +
+      `mature realistic skin texture, wearing ${character.outfit} with believable seams and wear.`,
+  );
+
+  paragraphs.push(
+    "Keep the exact same pose, camera angle, perspective, facial direction, body position, hand " +
+      "placement and lighting as [Image1]. Replace the background with a seamless soft light-gray " +
+      "backdrop with subtle tonal falloff.",
+  );
+
+  paragraphs.push(
+    `Composite the exact ${named} shown in [Image2] into the subject's hands, in the grip and at ` +
+      `the angle their hands already hold in [Image1]. Reproduce that product unchanged in shape, ` +
+      `color, label, text and proportions. Match its lighting, shadow and white balance to the ` +
+      `scene. Do not redesign it, do not relabel it, do not substitute a similar product, and do ` +
+      `not invent any part of it that [Image2] does not show.`,
+  );
+
+  paragraphs.push(
+    "Prioritize extreme photorealism: visible pores, natural skin variation, individual hair " +
+      "strands, realistic eyes and teeth, subtle facial asymmetry, accurate anatomy, and natural " +
+      "clothing folds. No smoothing, no beauty retouching, no stylization.",
+  );
+
+  return paragraphs.join(JOIN);
 }
 
 /** Shown next to the copy button, because the wrong source frame wastes a whole render. */

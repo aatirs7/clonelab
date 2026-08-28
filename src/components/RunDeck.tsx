@@ -6,7 +6,14 @@ import { useCallback, useState } from "react";
 import type { Beat, Character, Run } from "@/db/schema";
 import type { RunWithProduct } from "@/lib/runs";
 import { formatCents } from "@/lib/cost";
-import { characterStillPrompt, editPrompt, STILL_INSTRUCTION } from "@/lib/prompts";
+import {
+  characterStillPrompt,
+  compositeStillPrompt,
+  COMPOSITE_INSTRUCTION,
+  editPrompt,
+  NO_SAMPLE_FILMING_NOTE,
+  STILL_INSTRUCTION,
+} from "@/lib/prompts";
 import BeatSheet from "./BeatSheet";
 import CharacterBlock from "./CharacterBlock";
 import CopyButton from "./CopyButton";
@@ -60,12 +67,23 @@ export default function RunDeck({
     setRun((current) => ({ ...current, ...values }));
   }
 
+  /** The product is a nested record, so it cannot go through patch(). */
+  function patchProduct(values: Partial<RunWithProduct["product"]>) {
+    setRun((current) => ({ ...current, product: { ...current.product, ...values } }));
+  }
+
   const hasCharacter = Boolean(run.character);
   const hasBeats = Boolean(run.beats?.length);
   const hasClip = Boolean(run.sourceClipUrl);
   const hasStill = Boolean(run.characterStillUrl);
   const rendered = run.status === "complete";
-  const prompt = run.prompt ?? (run.character && run.beats ? editPrompt(run.character, run.beats) : "");
+  const hasSample = run.product.hasSample;
+  // The Kalodata image is the default; a manual upload only exists because that one was
+  // unusable, so it wins.
+  const productPhoto = run.product.uploadedImageUrl ?? run.product.imageUrl ?? null;
+  const prompt =
+    run.prompt ??
+    (run.character && run.beats ? editPrompt(run.character, run.beats, run.product.name) : "");
 
   type Step = {
     key: string;
@@ -126,9 +144,12 @@ export default function RunDeck({
       ready: hasBeats,
       needs: "Write the beat sheet first. The teleprompter has nothing to count through without it.",
       body: hasBeats ? (
-        <Link href={`/runs/${run.id}/teleprompter`} className="btn btn-rec" style={{ textDecoration: "none" }}>
-          Open teleprompter
-        </Link>
+        <>
+          {!hasSample ? <p className="note note-warn">{NO_SAMPLE_FILMING_NOTE}</p> : null}
+          <Link href={`/runs/${run.id}/teleprompter`} className="btn btn-rec" style={{ textDecoration: "none" }}>
+            Open teleprompter
+          </Link>
+        </>
       ) : (
         // A link cannot be disabled by the surrounding fieldset, so an unready step swaps
         // it for a button that can be.
@@ -167,12 +188,35 @@ export default function RunDeck({
       needs: "Cast a character first. The prompt below is built from those seven fields.",
       body: (
         <>
-          <p className="note note-warn">{STILL_INSTRUCTION}</p>
+          <p className="note note-warn">{hasSample ? STILL_INSTRUCTION : COMPOSITE_INSTRUCTION}</p>
+
+          {!hasSample ? (
+            <ProductPhoto
+              run={run}
+              photo={productPhoto}
+              onUploaded={(url) => {
+                patchProduct({ uploadedImageUrl: url });
+                refresh();
+              }}
+            />
+          ) : null}
+
           {run.character ? (
             <>
-              <div className="readout">{characterStillPrompt(run.character)}</div>
+              <div className="readout">
+                {hasSample
+                  ? characterStillPrompt(run.character)
+                  : compositeStillPrompt(run.character, run.product)}
+              </div>
               <div className="btn-row">
-                <CopyButton text={characterStillPrompt(run.character)} label="Copy prompt" />
+                <CopyButton
+                  text={
+                    hasSample
+                      ? characterStillPrompt(run.character)
+                      : compositeStillPrompt(run.character, run.product)
+                  }
+                  label="Copy prompt"
+                />
               </div>
             </>
           ) : (
@@ -191,6 +235,23 @@ export default function RunDeck({
               refresh();
             }}
           />
+
+          {/* Side by side, because the only thing worth checking is whether the product
+              in the still is actually the product in the photo. */}
+          {!hasSample && productPhoto && run.characterStillUrl ? (
+            <div className="compare">
+              <figure>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={productPhoto} alt="The real product" className="thumb" />
+                <figcaption className="tag">the real product</figcaption>
+              </figure>
+              <figure>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={run.characterStillUrl} alt="Generated still" className="thumb" />
+                <figcaption className="tag">what came back</figcaption>
+              </figure>
+            </div>
+          ) : null}
         </>
       ),
     },
@@ -507,5 +568,44 @@ function Finish({
 
       <RunLedger run={run} onPatch={onPatch} provider={provider} />
     </>
+  );
+}
+
+/**
+ * The product photo used for compositing. Kalodata supplies one automatically for picked
+ * products; this is the override for when that image is missing or too poor to work from.
+ */
+function ProductPhoto({
+  run,
+  photo,
+  onUploaded,
+}: {
+  run: RunWithProduct;
+  photo: string | null;
+  onUploaded: (url: string) => void;
+}) {
+  return (
+    <div className="rows">
+      <div className="row">
+        <span className="row-key">Product photo</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="" className="candidate-img" />
+          ) : null}
+          <span className="tag">
+            {run.product.uploadedImageUrl
+              ? "uploaded by hand"
+              : run.product.imageUrl
+                ? "from Kalodata"
+                : "none yet, the composite needs one"}
+          </span>
+        </span>
+        <span />
+      </div>
+      <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+        <UploadStep runId={run.id} kind="product" currentUrl={null} onUploaded={onUploaded} />
+      </div>
+    </div>
   );
 }

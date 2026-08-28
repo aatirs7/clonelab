@@ -34,7 +34,7 @@ export default function UploadStep({
   onUploaded,
 }: {
   runId: number;
-  kind: "clip" | "still" | "result";
+  kind: "clip" | "still" | "result" | "product";
   currentUrl: string | null;
   currentSeconds?: number | null;
   onUploaded: (url: string, seconds?: number) => void;
@@ -86,7 +86,7 @@ export default function UploadStep({
   return (
     <>
       {currentUrl ? (
-        kind === "still" ? (
+        kind === "still" || kind === "product" ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={currentUrl} alt="Character still" className="thumb" style={{ maxWidth: "11rem" }} />
         ) : (
@@ -103,7 +103,7 @@ export default function UploadStep({
       <input
         ref={input}
         type="file"
-        accept={kind === "still" ? "image/*" : "video/*"}
+        accept={kind === "still" || kind === "product" ? "image/*" : "video/*"}
         style={{ display: "none" }}
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -129,7 +129,9 @@ export default function UploadStep({
                 ? "Choose clip"
                 : kind === "still"
                   ? "Choose still"
-                  : "Upload finished MP4"}
+                  : kind === "product"
+                    ? "Upload product photo"
+                    : "Upload finished MP4"}
         </button>
       </div>
     </>
