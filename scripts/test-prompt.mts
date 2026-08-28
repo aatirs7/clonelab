@@ -282,5 +282,36 @@ check("avatar mode leaves visible placeholders when fields are blank", () => {
   assert.ok(filled.includes("Make him: blue eyes."));
 });
 
+check("no face option nests a second 'with' inside the template's own", () => {
+  // The template writes "with ${face}, ...", so a face string containing "with" produced
+  // "with broad rounded face with a softer jaw". Only face sits directly after that word,
+  // which is why later slots keep their own with-clauses.
+  const offenders: string[] = [];
+  for (const key of PROFESSION_ORDER) {
+    for (const option of professionBuckets[key].face!) {
+      if (option.text.includes(" with ")) offenders.push(`${key}: ${option.text}`);
+    }
+  }
+  assert.equal(offenders.length, 0, offenders.join("; "));
+
+  /*
+    Checked on the face segment only. The template legitimately writes two withs of its
+    own ("replace him with a worker with ..."), so a whole-prompt scan for two withs
+    flags correct English.
+  */
+  for (const key of PROFESSION_ORDER) {
+    for (let i = 0; i < 12; i += 1) {
+      const roll = rollCharacter({ seed: `g-${key}-${i}`, age: 30, gender: "male", professionKey: key, customNoun: "" });
+      const prompt = buildCharacterPrompt(roll, { sourceSubject: "man", productInstruction: "" });
+      const after = prompt.split(`${roll.noun} with `)[1] ?? "";
+      const faceSegment = after.split(",")[0];
+      assert.ok(
+        !faceSegment.includes(" with "),
+        `${key}: face segment reads "${faceSegment}" straight after the template's own with`,
+      );
+    }
+  }
+});
+
 console.log(failed === 0 ? "\nall passed" : `\n${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

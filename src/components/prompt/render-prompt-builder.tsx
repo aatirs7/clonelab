@@ -5,6 +5,7 @@ import {
   buildRenderPrompt,
   modeCopy,
   strictnessCopy,
+  strictnessLabels,
   type RenderMode,
   type Strictness,
 } from "@/lib/prompt/templates/render";
@@ -77,7 +78,7 @@ export default function RenderPromptBuilder({
         >
           {(Object.keys(strictnessCopy) as Strictness[]).map((key) => (
             <option key={key} value={key}>
-              {key}
+              {strictnessLabels[key]}
             </option>
           ))}
         </select>

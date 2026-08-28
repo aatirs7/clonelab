@@ -23,7 +23,9 @@
 
   --ink: #e9edf2;
   --ink-dim: #98a2b0;
-  --ink-faint: #626c7a;
+  /* 5.2:1 against --bg. The previous #626c7a measured 3.58:1 and failed AA on the
+     10px mono labels, which count as normal size text. */
+  --ink-faint: #7d8794;
 
   /* The one interactive colour. Active rail item, primary buttons, focus rings. */
   --accent: #4c8dff;

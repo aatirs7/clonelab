@@ -43,10 +43,10 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "rugged facial features", weight: 24 },
-      { text: "broad rounded face with a softer jaw", weight: 20 },
+      { text: "broad rounded face and a softer jaw", weight: 20 },
       { text: "soft square face", weight: 18 },
       { text: "weathered practical face", weight: 16 },
-      { text: "angular face with a natural jawline", weight: 12 },
+      { text: "angular face and a natural jawline", weight: 12 },
       { text: "friendly working-class face", weight: 10 },
     ],
     hair: [
@@ -96,8 +96,8 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "calm approachable face", weight: 26 },
       { text: "balanced natural facial features", weight: 22 },
-      { text: "softer rounded face with tired eyes", weight: 20 },
-      { text: "narrow face with a gentle jawline", weight: 18 },
+      { text: "softer rounded face and tired eyes", weight: 20 },
+      { text: "narrow face and a gentle jawline", weight: 18 },
       { text: "broad friendly face", weight: 14 },
     ],
     hair: [
@@ -149,9 +149,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "flushed face from kitchen heat", weight: 24 },
       { text: "broad friendly face", weight: 22 },
-      { text: "angular face with a natural jawline", weight: 18 },
+      { text: "angular face and a natural jawline", weight: 18 },
       { text: "weathered practical face", weight: 18 },
-      { text: "soft square face with heavy brows", weight: 10 },
+      { text: "soft square face and heavy brows", weight: 10 },
       { text: "focused serious face", weight: 8 },
     ],
     hair: [
@@ -202,9 +202,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "plain practical face", weight: 26 },
-      { text: "broad rounded face with a softer jaw", weight: 22 },
+      { text: "broad rounded face and a softer jaw", weight: 22 },
       { text: "tired everyday face", weight: 20 },
-      { text: "angular face with a natural jawline", weight: 18 },
+      { text: "angular face and a natural jawline", weight: 18 },
       { text: "friendly working-class face", weight: 14 },
     ],
     hair: [
@@ -256,7 +256,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "rugged facial features", weight: 22 },
       { text: "soft square face", weight: 20 },
       { text: "broad friendly face", weight: 18 },
-      { text: "angular face with a heavy brow", weight: 14 },
+      { text: "angular face and a heavy brow", weight: 14 },
     ],
     hair: [
       { text: "short brown hair", weight: 20 },
@@ -305,7 +305,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "warm approachable face", weight: 26 },
       { text: "balanced natural facial features", weight: 24 },
-      { text: "narrow face with a gentle jawline", weight: 18 },
+      { text: "narrow face and a gentle jawline", weight: 18 },
       { text: "softer rounded face", weight: 18 },
       { text: "broad friendly face", weight: 14 },
     ],
@@ -354,8 +354,8 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "sturdy practical build", weight: 4 },
     ],
     face: [
-      { text: "angular face with defined cheekbones", weight: 26 },
-      { text: "lean face with a defined jawline", weight: 24 },
+      { text: "angular face and defined cheekbones", weight: 26 },
+      { text: "lean face and a defined jawline", weight: 24 },
       { text: "broad friendly face", weight: 20 },
       { text: "balanced natural facial features", weight: 18 },
       { text: "focused serious face", weight: 12 },
@@ -407,9 +407,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "polished approachable face", weight: 28 },
       { text: "balanced natural facial features", weight: 24 },
-      { text: "narrow face with a gentle jawline", weight: 18 },
+      { text: "narrow face and a gentle jawline", weight: 18 },
       { text: "broad friendly face", weight: 16 },
-      { text: "angular face with defined cheekbones", weight: 14 },
+      { text: "angular face and defined cheekbones", weight: 14 },
     ],
     hair: [
       { text: "neatly combed short brown hair", weight: 24 },
@@ -459,7 +459,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "friendly everyday face", weight: 28 },
       { text: "balanced natural facial features", weight: 24 },
       { text: "softer rounded face", weight: 20 },
-      { text: "narrow face with a gentle jawline", weight: 16 },
+      { text: "narrow face and a gentle jawline", weight: 16 },
       { text: "tired everyday face", weight: 12 },
     ],
     hair: [
@@ -510,8 +510,8 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "plain practical face", weight: 26 },
       { text: "friendly everyday face", weight: 24 },
       { text: "tired everyday face", weight: 20 },
-      { text: "broad rounded face with a softer jaw", weight: 18 },
-      { text: "angular face with a natural jawline", weight: 12 },
+      { text: "broad rounded face and a softer jaw", weight: 18 },
+      { text: "angular face and a natural jawline", weight: 12 },
     ],
     hair: [
       { text: "messy short hair under a cap", weight: 22 },
@@ -561,7 +561,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "balanced natural facial features", weight: 28 },
       { text: "calm approachable face", weight: 24 },
       { text: "softer rounded face", weight: 20 },
-      { text: "narrow face with a gentle jawline", weight: 16 },
+      { text: "narrow face and a gentle jawline", weight: 16 },
       { text: "tired everyday face", weight: 12 },
     ],
     hair: [
@@ -610,9 +610,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "styled expressive face", weight: 26 },
-      { text: "angular face with defined cheekbones", weight: 22 },
+      { text: "angular face and defined cheekbones", weight: 22 },
       { text: "balanced natural facial features", weight: 20 },
-      { text: "narrow face with a gentle jawline", weight: 18 },
+      { text: "narrow face and a gentle jawline", weight: 18 },
       { text: "broad friendly face", weight: 14 },
     ],
     hair: [
@@ -661,7 +661,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "expressive sociable face", weight: 26 },
-      { text: "angular face with a natural jawline", weight: 22 },
+      { text: "angular face and a natural jawline", weight: 22 },
       { text: "balanced natural facial features", weight: 20 },
       { text: "broad friendly face", weight: 18 },
       { text: "tired everyday face", weight: 14 },
@@ -713,8 +713,8 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "impassive practical face", weight: 26 },
       { text: "soft square face", weight: 22 },
-      { text: "broad rounded face with a softer jaw", weight: 20 },
-      { text: "angular face with a heavy brow", weight: 18 },
+      { text: "broad rounded face and a softer jaw", weight: 20 },
+      { text: "angular face and a heavy brow", weight: 18 },
       { text: "weathered practical face", weight: 14 },
     ],
     hair: [
@@ -762,11 +762,11 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "compact solid build", weight: 6 },
     ],
     face: [
-      { text: "sun-weathered face with deep lines", weight: 28 },
+      { text: "sun-weathered face and deep lines", weight: 28 },
       { text: "rugged facial features", weight: 24 },
       { text: "weathered practical face", weight: 20 },
       { text: "broad friendly face", weight: 16 },
-      { text: "angular face with a natural jawline", weight: 12 },
+      { text: "angular face and a natural jawline", weight: 12 },
     ],
     hair: [
       { text: "short brown hair flattened by a cap", weight: 22 },
@@ -814,8 +814,8 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "practical focused face", weight: 26 },
-      { text: "angular face with a natural jawline", weight: 22 },
-      { text: "broad rounded face with a softer jaw", weight: 20 },
+      { text: "angular face and a natural jawline", weight: 22 },
+      { text: "broad rounded face and a softer jaw", weight: 20 },
       { text: "weathered practical face", weight: 18 },
       { text: "friendly working-class face", weight: 14 },
     ],
@@ -865,7 +865,7 @@ export const professionBuckets: Record<string, CastingBucket> = {
     ],
     face: [
       { text: "weathered practical face", weight: 26 },
-      { text: "broad rounded face with a softer jaw", weight: 22 },
+      { text: "broad rounded face and a softer jaw", weight: 22 },
       { text: "rugged facial features", weight: 20 },
       { text: "soft square face", weight: 18 },
       { text: "friendly working-class face", weight: 14 },
@@ -915,9 +915,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
       { text: "compact solid build", weight: 4 },
     ],
     face: [
-      { text: "youthful adult face with soft features", weight: 28 },
+      { text: "youthful adult face and soft features", weight: 28 },
       { text: "balanced natural facial features", weight: 24 },
-      { text: "narrow face with a gentle jawline", weight: 20 },
+      { text: "narrow face and a gentle jawline", weight: 20 },
       { text: "friendly everyday face", weight: 16 },
       { text: "tired everyday face", weight: 12 },
     ],
@@ -1019,9 +1019,9 @@ export const professionBuckets: Record<string, CastingBucket> = {
     face: [
       { text: "expressive camera-ready face", weight: 26 },
       { text: "balanced natural facial features", weight: 24 },
-      { text: "angular face with defined cheekbones", weight: 20 },
+      { text: "angular face and defined cheekbones", weight: 20 },
       { text: "friendly everyday face", weight: 18 },
-      { text: "narrow face with a gentle jawline", weight: 12 },
+      { text: "narrow face and a gentle jawline", weight: 12 },
     ],
     hair: [
       { text: "styled short hair with texture and product hold", weight: 24 },

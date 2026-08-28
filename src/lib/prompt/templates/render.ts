@@ -34,6 +34,13 @@ export const strictnessCopy = {
 
 export type Strictness = keyof typeof strictnessCopy;
 
+/** Shown in the UI. The raw enum keys are storage values, not labels. */
+export const strictnessLabels: Record<Strictness, string> = {
+  strict: "Strict 1:1 preservation",
+  natural: "Natural fit, tiny corrections allowed",
+  adaptive: "Adaptive fit for harder swaps",
+};
+
 type ModeCopy = {
   label: string;
   open: (video: string, image: string) => string;

@@ -29,7 +29,27 @@ import CharacterBuilder from "./prompt/character-builder";
 import RenderPromptBuilder from "./prompt/render-prompt-builder";
 import { useRunPersist } from "./prompt/use-run-persist";
 import { beatsAsTimestamps } from "@/lib/prompts";
+import { buildRenderPrompt } from "@/lib/prompt/templates/render";
 import VoiceStep from "./VoiceStep";
+
+/**
+ * The step keys, in order, at module scope.
+ *
+ * They are static, so deriving them from the rendered steps array would rebuild goTo on
+ * every render for no reason. This is also the vocabulary of the ?step= URL param, which
+ * means renaming one of these is a change to links people may have saved.
+ */
+const STEP_KEYS = [
+  "character",
+  "beats",
+  "film",
+  "clip",
+  "still",
+  "prompt",
+  "render",
+  "voice",
+  "finish",
+] as const;
 
 /**
  * The run, as a deck: every step listed down the rail, one step in front of you at a time.
@@ -49,10 +69,13 @@ export default function RunDeck({
   run: initial,
   operatorAge,
   provider,
+  initialStep,
 }: {
   run: RunWithProduct;
   operatorAge: number;
   provider: "manual" | "fal";
+  /** Read from ?step= on the server, so a deep link survives a reload. */
+  initialStep: string | null;
 }) {
   const router = useRouter();
 
@@ -88,7 +111,9 @@ export default function RunDeck({
   const prompt =
     run.renderPrompt ??
     run.prompt ??
-    (run.character && run.beats ? editPrompt(run.character, run.beats, run.product.name) : "");
+    (run.character && run.beats
+      ? editPrompt(run.character, run.beats, run.product.name)
+      : buildRenderPrompt({ mode: "person", strictness: "strict", extra: "" }));
 
   type Step = {
     key: string;
@@ -116,6 +141,7 @@ export default function RunDeck({
           {/* The builder rolls a presenter and emits the image prompt. The seven field
               sheet below stays as the record the rest of the pipeline reads. */}
           <CharacterBuilder
+            seed={run.characterSeed ?? "clonelab"}
             initial={{
               seed: run.characterSeed,
               roll: run.characterRoll,
@@ -317,9 +343,14 @@ export default function RunDeck({
       hint: run.promptEdited
         ? "You edited this by hand, so it no longer regenerates from the character or the beats."
         : "Composed from the character and the beat sheet. Edit it and it stops regenerating.",
-      done: Boolean(prompt),
-      ready: Boolean(prompt),
-      needs: "Needs both a character and a beat sheet. It composes itself from the two.",
+      /*
+        Deterministic from a mode and a strictness level, so there is nothing to wait for
+        and no gate to show. It used to be gated on the character and the beat sheet,
+        which meant the panel rendered a "needs" message directly above a fully composed
+        prompt.
+      */
+      done: Boolean(run.renderPrompt),
+      ready: true,
       body: (
         <>
           <RenderPromptBuilder
@@ -418,10 +449,30 @@ export default function RunDeck({
     },
   ];
 
-  // Open on the first thing that still needs doing, so the deck picks up where you left off.
+  /*
+    Open on the deep-linked step when there is one, otherwise on the first thing that still
+    needs doing. Without the URL half, a refresh dropped you back on step one no matter
+    where you were, and there was no way to link yourself to a step.
+  */
+  const linked = steps.findIndex((step) => step.key === initialStep);
   const firstUndone = steps.findIndex((step) => step.ready && !step.done);
-  const [index, setIndex] = useState(firstUndone === -1 ? 0 : firstUndone);
+  const [index, setIndex] = useState(linked !== -1 ? linked : firstUndone === -1 ? 0 : firstUndone);
   const active = steps[Math.min(index, steps.length - 1)];
+
+  /*
+    replaceState rather than a router push: the step is a view within one page, so it
+    should not add a history entry per click, but the back button should still leave the
+    run rather than walk backwards through nine steps.
+  */
+  const goTo = useCallback((next: number) => {
+    setIndex(next);
+    const key = STEP_KEYS[next];
+    if (typeof window !== "undefined" && key) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("step", key);
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
 
   return (
     <div className="deck">
@@ -442,7 +493,7 @@ export default function RunDeck({
               className="rail-item"
               aria-current={i === index ? "step" : undefined}
               data-state={i === index ? "active" : step.done ? "done" : "todo"}
-              onClick={() => setIndex(i)}
+              onClick={() => goTo(i)}
             >
               <span className="rail-num">{step.done && i !== index ? "✓" : String(i + 1).padStart(2, "0")}</span>
               {step.label}
@@ -482,7 +533,7 @@ export default function RunDeck({
             <button
               type="button"
               className="btn btn-quiet"
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+              onClick={() => goTo(Math.max(0, index - 1))}
               disabled={index === 0}
             >
               Back
@@ -490,7 +541,7 @@ export default function RunDeck({
             <button
               type="button"
               className="btn"
-              onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))}
+              onClick={() => goTo(Math.min(steps.length - 1, index + 1))}
               disabled={index === steps.length - 1}
             >
               Next

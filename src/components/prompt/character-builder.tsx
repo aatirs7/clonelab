@@ -18,9 +18,16 @@ import SlotGrid from "./slot-grid";
  * look at a prompt that no longer matches the controls above it.
  */
 export default function CharacterBuilder({
+  seed: initialSeed,
   initial,
   onChange,
 }: {
+  /*
+    Required and minted on the server. Calling makeSeed() during render would produce a
+    different value on the server and the client, which is a hydration mismatch, and would
+    also reroll the character on every reload.
+  */
+  seed: string;
   initial?: {
     seed?: string | null;
     roll?: CharacterRoll | null;
@@ -37,7 +44,7 @@ export default function CharacterBuilder({
   const [professionKey, setProfessionKey] = useState(initial?.professionKey ?? "construction");
   const [customNoun, setCustomNoun] = useState(initial?.customNoun ?? "");
   const [productInstruction, setProductInstruction] = useState(initial?.productInstruction ?? "");
-  const [seed, setSeed] = useState(initial?.seed ?? initial?.roll?.seed ?? makeSeed());
+  const [seed, setSeed] = useState(initialSeed);
 
   const [mode, setMode] = useState<"character" | "avatar">("character");
   const [sourceSubject, setSourceSubject] = useState<SourceSubject>("person in the reference image");
@@ -69,9 +76,9 @@ export default function CharacterBuilder({
     [mode, roll, sourceSubject, productInstruction, referenceName, avatarName, changes, pronoun],
   );
 
+  // Only ever called from a click, never during render, so Math.random is safe here.
   const reroll = useCallback(() => {
-    const next = makeSeed();
-    setSeed(next);
+    setSeed(makeSeed());
   }, []);
 
   function save() {
