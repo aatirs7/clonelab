@@ -20,6 +20,15 @@ const patch = z.object({
   // real number once.
   actualCost: z.number().int().min(0).nullable().optional(),
   commissionEarned: z.number().int().min(0).nullable().optional(),
+  // Prompt generator state. The roll is stored alongside the rendered string: the roll
+  // allows replay from the seed, the string is the record of what was actually pasted.
+  characterSeed: z.string().nullable().optional(),
+  characterRoll: z.record(z.string(), z.unknown()).nullable().optional(),
+  characterPrompt: z.string().nullable().optional(),
+  renderPromptMode: z.string().nullable().optional(),
+  renderPromptStrictness: z.string().nullable().optional(),
+  renderPromptExtra: z.string().nullable().optional(),
+  renderPrompt: z.string().nullable().optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -22,6 +22,10 @@ import HandoffStep from "./HandoffStep";
 import RenderStep from "./RenderStep";
 import SignOutButton from "./SignOutButton";
 import UploadStep from "./UploadStep";
+import CharacterBuilder from "./prompt/character-builder";
+import RenderPromptBuilder from "./prompt/render-prompt-builder";
+import { useRunPersist } from "./prompt/use-run-persist";
+import { beatsAsTimestamps } from "@/lib/prompts";
 import VoiceStep from "./VoiceStep";
 
 /**
@@ -63,6 +67,7 @@ export default function RunDeck({
   }
 
   const refresh = useCallback(() => router.refresh(), [router]);
+  const { save } = useRunPersist(initial.id);
 
   function patch(values: Partial<Run>) {
     setRun((current) => ({ ...current, ...values }));
@@ -83,6 +88,7 @@ export default function RunDeck({
   // unusable, so it wins.
   const productPhoto = run.product.uploadedImageUrl ?? run.product.imageUrl ?? null;
   const prompt =
+    run.renderPrompt ??
     run.prompt ??
     (run.character && run.beats ? editPrompt(run.character, run.beats, run.product.name) : "");
 
@@ -108,14 +114,29 @@ export default function RunDeck({
       done: hasCharacter,
       ready: true,
       body: (
-        <CharacterBlock
-          run={run}
-          operatorAge={operatorAge}
-          onSaved={(character: Character) => {
-            patch({ character });
-            refresh();
-          }}
-        />
+        <>
+          {/* The builder rolls a presenter and emits the image prompt. The seven field
+              sheet below stays as the record the rest of the pipeline reads. */}
+          <CharacterBuilder
+            initial={{
+              seed: run.characterSeed,
+              roll: run.characterRoll,
+              productInstruction: run.product.name,
+            }}
+            onChange={({ seed, roll, prompt }) => {
+              save({ characterSeed: seed, characterRoll: roll, characterPrompt: prompt });
+              patch({ characterSeed: seed, characterRoll: roll, characterPrompt: prompt });
+            }}
+          />
+          <CharacterBlock
+            run={run}
+            operatorAge={operatorAge}
+            onSaved={(character: Character) => {
+              patch({ character });
+              refresh();
+            }}
+          />
+        </>
       ),
     },
     {
@@ -190,6 +211,27 @@ export default function RunDeck({
       body: (
         <>
           <p className="note note-warn">{hasSample ? STILL_INSTRUCTION : COMPOSITE_INSTRUCTION}</p>
+
+          {/* Read only replay of whatever the builder produced on step 1, so the still is
+              generated from the same text that was saved rather than a fresh roll. */}
+          {run.characterPrompt ? (
+            <div className="rows">
+              <div className="row" style={{ gridTemplateColumns: "1fr auto" }}>
+                <span className="row-key">Saved image prompt</span>
+                <span className="tag">
+                  seed <span className="mono">{run.characterSeed ?? "none"}</span>
+                </span>
+              </div>
+              <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+                <pre className="prompt-out" style={{ minHeight: 0, padding: "0.75rem 0", fontSize: 13 }}>
+                  {run.characterPrompt}
+                </pre>
+              </div>
+              <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+                <CopyButton text={run.characterPrompt} label="Copy saved prompt" />
+              </div>
+            </div>
+          ) : null}
 
           {!hasSample ? (
             <ProductPhoto
@@ -267,15 +309,46 @@ export default function RunDeck({
       ready: Boolean(prompt),
       needs: "Needs both a character and a beat sheet. It composes itself from the two.",
       body: (
-        <PromptEditor
-          runId={run.id}
-          prompt={prompt}
-          edited={run.promptEdited}
-          onChanged={(next, edited) => {
-            patch({ prompt: next || null, promptEdited: edited });
-            refresh();
-          }}
-        />
+        <>
+          <RenderPromptBuilder
+            initial={{
+              mode: run.renderPromptMode,
+              strictness: run.renderPromptStrictness,
+              extra: run.renderPromptExtra,
+            }}
+            beatTimings={run.beats?.length ? beatsAsTimestamps(run.beats) : null}
+            onChange={({ mode, strictness, extra, prompt: built }) => {
+              save({
+                renderPromptMode: mode,
+                renderPromptStrictness: strictness,
+                renderPromptExtra: extra,
+                renderPrompt: built,
+                prompt: built,
+              });
+              patch({
+                renderPromptMode: mode,
+                renderPromptStrictness: strictness,
+                renderPromptExtra: extra,
+                renderPrompt: built,
+                prompt: built,
+                promptEdited: true,
+              });
+            }}
+          />
+
+          <details className="builder-advanced">
+            <summary>Edit the saved text by hand</summary>
+            <PromptEditor
+              runId={run.id}
+              prompt={prompt}
+              edited={run.promptEdited}
+              onChanged={(next, edited) => {
+                patch({ prompt: next || null, promptEdited: edited });
+                refresh();
+              }}
+            />
+          </details>
+        </>
       ),
     },
     {

@@ -12,6 +12,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { CharacterRoll } from "@/lib/prompt/types";
 
 export const runStatusEnum = pgEnum("run_status", [
   "draft",
@@ -187,6 +188,21 @@ export const runs = pgTable("runs", {
     only ever count spend, which made a cost line look like progress toward a revenue goal.
   */
   commissionEarned: integer("commission_earned"),
+
+  /*
+    The prompt generator's state. The seed plus the four inputs reproduce a roll exactly,
+    so a character can be rebuilt months later. Both the roll and the rendered string are
+    stored: the roll allows replay, the string is the record of what was actually pasted
+    into Higgsfield. If a template changes later, the stored string is still the truth for
+    that run.
+  */
+  characterSeed: text("character_seed"),
+  characterRoll: jsonb("character_roll").$type<CharacterRoll | null>(),
+  characterPrompt: text("character_prompt"),
+  renderPromptMode: text("render_prompt_mode"),
+  renderPromptStrictness: text("render_prompt_strictness"),
+  renderPromptExtra: text("render_prompt_extra"),
+  renderPrompt: text("render_prompt"),
 
   /* The re-voiced audio track, converted from the original take. Dropped into CapCut
      alongside the render instead of the raw voice. */

@@ -1110,3 +1110,156 @@ fieldset.panel-body:disabled {
   border-radius: var(--radius);
   background: var(--surface);
 }
+
+/* ---------- prompt builders ---------- */
+
+.builder {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+.builder-controls,
+.builder-output {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.builder-controls {
+  padding: 20px;
+  text-align: center;
+}
+
+.builder-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.builder-help {
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.45;
+}
+
+.builder-toolbar {
+  min-height: 62px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+@media (max-width: 560px) {
+  .slot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* No fixed height: a long outfit string wraps to two lines and must not clip. */
+.slot {
+  min-height: 88px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  justify-items: center;
+  text-align: center;
+}
+
+.slot-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.slot-value {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+/* The settle. Values swapping mid-spin get a faint blur so the cycle reads as motion. */
+.slot[data-spinning="true"] .slot-value {
+  opacity: 0.55;
+  filter: blur(0.4px);
+}
+
+.slot-realism {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: 0.8125rem;
+}
+
+.prompt-out {
+  min-height: 360px;
+  padding: 24px;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.72;
+  color: var(--ink);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.builder-display {
+  font-size: clamp(32px, 4.1vw, 54px);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+  font-weight: 700;
+}
+
+details.builder-advanced summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 12px;
+}
+
+details.builder-advanced summary:hover {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot[data-spinning="true"] .slot-value {
+    opacity: 1;
+    filter: none;
+  }
+}
