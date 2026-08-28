@@ -22,7 +22,7 @@ export default function HandoffStep({
   prompt: string;
   onUploaded: (url: string) => void;
 }) {
-  const ready = Boolean(run.sourceClipUrl && run.characterStillUrl && prompt);
+  const ready = Boolean(prompt);
 
   return (
     <>
@@ -49,17 +49,23 @@ export default function HandoffStep({
               still and controls identity. Add them in that order.
             </p>
             <div className="rows" style={{ marginTop: "0.625rem" }}>
-              <div className="row">
+              <div className="row" style={{ gridTemplateColumns: "7rem 1fr" }}>
                 <span className="row-key">@Video1</span>
-                <span className="mono handoff-url">{run.sourceClipUrl ?? "not uploaded yet"}</span>
-                {run.sourceClipUrl ? <CopyChip text={run.sourceClipUrl} /> : <span />}
+                <span className="stat-sub" style={{ marginTop: 0, textAlign: "left" }}>
+                  The take you filmed{run.sourceClipSeconds ? `, ${run.sourceClipSeconds.toFixed(1)}s` : ""}. Controls all the motion.
+                </span>
               </div>
-              <div className="row">
+              <div className="row" style={{ gridTemplateColumns: "7rem 1fr" }}>
                 <span className="row-key">@Image1</span>
-                <span className="mono handoff-url">{run.characterStillUrl ?? "not uploaded yet"}</span>
-                {run.characterStillUrl ? <CopyChip text={run.characterStillUrl} /> : <span />}
+                <span className="stat-sub" style={{ marginTop: 0, textAlign: "left" }}>
+                  The character still from ChatGPT. Controls identity.
+                </span>
               </div>
             </div>
+            <p className="stat-sub" style={{ marginTop: "0.625rem" }}>
+              Both files are on this device already, so upload them to Higgsfield straight from
+              disk. Nothing needs downloading from here first.
+            </p>
           </div>
         </li>
 
@@ -127,21 +133,9 @@ export default function HandoffStep({
 
       {!ready ? (
         <p className="note note-warn">
-          The prompt and both input files need to exist before this handoff is worth starting.
+          There is no prompt yet. It composes itself once the character and the beat sheet exist.
         </p>
       ) : null}
     </>
-  );
-}
-
-function CopyChip({ text }: { text: string }) {
-  return (
-    <button
-      type="button"
-      className="row-action"
-      onClick={() => navigator.clipboard.writeText(text)}
-    >
-      copy
-    </button>
   );
 }

@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { isSignedIn } from "@/lib/auth";
-import { MAX_CLIP_SECONDS, MIN_CLIP_SECONDS } from "@/lib/cost";
 import { uploadToFal } from "@/lib/fal";
 import { getRun, updateRun } from "@/lib/runs";
-import { updateProduct } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 // Uploading a source clip over a slow connection outlasts the default limit.
 export const maxDuration = 300;
 
 /**
- * Uploads go through here rather than straight from the browser so FAL_KEY stays on the
- * server. The file is streamed to fal storage and only the returned URL is persisted.
+ * Only outputs are hosted.
+ *
+ * Hosting existed because fal's render API needed publicly reachable URLs. With the render
+ * a manual Higgsfield handoff the operator uploads from their own disk, so hosting the
+ * source clip, the character still and the product photo bought nothing but upload
+ * waiting. What is worth keeping is the artifact you come back to later: the finished MP4,
+ * and the converted audio, which is written by the voice route.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isSignedIn())) {
@@ -26,24 +29,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const file = form?.get("file");
   const kind = form?.get("kind");
 
-  const kinds = ["clip", "still", "result", "product"];
+  const kinds = ["result"];
   if (!(file instanceof Blob) || typeof kind !== "string" || !kinds.includes(kind)) {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
-  }
-
-  /*
-    A photograph of the real product, uploaded by hand. It overrides the Kalodata image,
-    because it only ever gets uploaded when that one was missing or too poor to composite
-    from. It lives on the product, not the run: it is the same object in every run.
-  */
-  if (kind === "product") {
-    try {
-      const url = await uploadToFal(file);
-      await updateProduct(run.productId, { uploadedImageUrl: url });
-      return NextResponse.json({ url });
-    } catch (error) {
-      return NextResponse.json({ error: (error as Error).message }, { status: 502 });
-    }
   }
 
   // The finished MP4, brought back from Higgsfield by hand. Uploading it is what marks
@@ -58,43 +46,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
 
-  if (kind === "clip") {
-    const seconds = Number(form?.get("seconds"));
-    if (!Number.isFinite(seconds)) {
-      return NextResponse.json({ error: "The clip duration could not be measured." }, { status: 400 });
-    }
-    // fal rejects source videos outside this window outright, so catching it here saves
-    // a slow upload that was always going to fail.
-    if (seconds < MIN_CLIP_SECONDS || seconds > MAX_CLIP_SECONDS) {
-      return NextResponse.json(
-        {
-          error: `fal only accepts source clips between ${MIN_CLIP_SECONDS} and ${MAX_CLIP_SECONDS} seconds. This one is ${seconds.toFixed(1)}s.`,
-        },
-        { status: 400 },
-      );
-    }
-
-    try {
-      const url = await uploadToFal(file);
-      await updateRun(id, {
-        sourceClipUrl: url,
-        sourceClipSeconds: seconds,
-        status: run.status === "draft" || run.status === "planned" ? "filmed" : run.status,
-      });
-      return NextResponse.json({ url, seconds });
-    } catch (error) {
-      return NextResponse.json({ error: (error as Error).message }, { status: 502 });
-    }
-  }
-
-  try {
-    const url = await uploadToFal(file);
-    await updateRun(id, {
-      characterStillUrl: url,
-      status: run.sourceClipUrl ? "still_ready" : run.status,
-    });
-    return NextResponse.json({ url });
-  } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 502 });
-  }
+  return NextResponse.json({ error: "bad request" }, { status: 400 });
 }

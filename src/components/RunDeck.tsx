@@ -19,11 +19,12 @@ import CharacterBlock from "./CharacterBlock";
 import CopyButton from "./CopyButton";
 import FinishChecklist, { CHECKS } from "./FinishChecklist";
 import StartFrame from "./StartFrame";
+import ClipCheck from "./ClipCheck";
+import StillReady from "./StillReady";
 import PromptEditor from "./PromptEditor";
 import HandoffStep from "./HandoffStep";
 import RenderStep from "./RenderStep";
 import SignOutButton from "./SignOutButton";
-import UploadStep from "./UploadStep";
 import CharacterBuilder from "./prompt/character-builder";
 import RenderPromptBuilder from "./prompt/render-prompt-builder";
 import { useRunPersist } from "./prompt/use-run-persist";
@@ -75,15 +76,10 @@ export default function RunDeck({
     setRun((current) => ({ ...current, ...values }));
   }
 
-  /** The product is a nested record, so it cannot go through patch(). */
-  function patchProduct(values: Partial<RunWithProduct["product"]>) {
-    setRun((current) => ({ ...current, product: { ...current.product, ...values } }));
-  }
-
   const hasCharacter = Boolean(run.character);
   const hasBeats = Boolean(run.beats?.length);
-  const hasClip = Boolean(run.sourceClipUrl);
-  const hasStill = Boolean(run.characterStillUrl);
+  const clipChecked = run.sourceClipSeconds !== null;
+  const stillReady = ["still_ready", "queued", "rendering", "complete"].includes(run.status);
   const rendered = run.status === "complete";
   const hasSample = run.product.hasSample;
   // The Kalodata image is the default; a manual upload only exists because that one was
@@ -164,7 +160,7 @@ export default function RunDeck({
       label: "Film",
       title: "Film the take",
       hint: "The teleprompter runs beside you. Film on the camera app, speak the lines out loud, and stay in one spot facing the camera.",
-      done: run.status === "filmed" || hasClip,
+      done: run.status === "filmed" || clipChecked,
       ready: hasBeats,
       needs: "Write the beat sheet first. The teleprompter has nothing to count through without it.",
       body: hasBeats ? (
@@ -203,19 +199,17 @@ export default function RunDeck({
     },
     {
       key: "clip",
-      label: "Upload clip",
-      title: "Upload the take",
-      hint: "Trim to just the take first. The model only accepts 1.8 to 30.2 seconds of source, and a long file makes the render slower for nothing.",
-      done: hasClip,
+      label: "Check clip",
+      title: "Check the take",
+      hint: "Trim to just the take first. Seedance only accepts 1.8 to 30.2 seconds of source, and finding that out at the render is a wasted trip.",
+      done: clipChecked,
       ready: true,
       body: (
-        <UploadStep
+        <ClipCheck
           runId={run.id}
-          kind="clip"
-          currentUrl={run.sourceClipUrl}
-          currentSeconds={run.sourceClipSeconds}
-          onUploaded={(url, seconds) => {
-            patch({ sourceClipUrl: url, sourceClipSeconds: seconds ?? null });
+          seconds={run.sourceClipSeconds}
+          onChecked={(seconds) => {
+            patch({ sourceClipSeconds: seconds, status: "filmed" });
             refresh();
           }}
         />
@@ -226,7 +220,7 @@ export default function RunDeck({
       label: "Character still",
       title: "Make the character still",
       hint: "Screenshot a frame from the take you just filmed, paste this into ChatGPT with it, then upload what comes back.",
-      done: hasStill,
+      done: stillReady,
       ready: hasCharacter,
       needs: "Cast a character first. The prompt below is built from those seven fields.",
       body: (
@@ -256,15 +250,25 @@ export default function RunDeck({
             </div>
           ) : null}
 
-          {!hasSample ? (
-            <ProductPhoto
-              run={run}
-              photo={productPhoto}
-              onUploaded={(url) => {
-                patchProduct({ uploadedImageUrl: url });
-                refresh();
-              }}
-            />
+          {!hasSample && productPhoto ? (
+            <div className="rows">
+              <div className="row">
+                <span className="row-key">Product photo</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={productPhoto} alt="" className="candidate-img" />
+                  <span className="tag">from Kalodata, paste it into ChatGPT alongside the frame</span>
+                </span>
+                <a className="row-action" href={productPhoto} target="_blank" rel="noreferrer noopener">
+                  open
+                </a>
+              </div>
+            </div>
+          ) : !hasSample ? (
+            <p className="note note-warn">
+              No product photo on this record. Use your own photo of the real product when you paste
+              the prompt into ChatGPT. Never let it invent one from the description.
+            </p>
           ) : null}
 
           {run.character ? (
@@ -292,32 +296,17 @@ export default function RunDeck({
               as filmed.
             </div>
           )}
-          <UploadStep
+          <StillReady
             runId={run.id}
-            kind="still"
-            currentUrl={run.characterStillUrl}
-            onUploaded={(url) => {
-              patch({ characterStillUrl: url });
+            product={run.product}
+            productPhoto={productPhoto}
+            ready={stillReady}
+            onReady={(next) => {
+              patch({ status: next ? "still_ready" : "filmed" });
               refresh();
             }}
           />
 
-          {/* Side by side, because the only thing worth checking is whether the product
-              in the still is actually the product in the photo. */}
-          {!hasSample && productPhoto && run.characterStillUrl ? (
-            <div className="compare">
-              <figure>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={productPhoto} alt="The real product" className="thumb" />
-                <figcaption className="tag">the real product</figcaption>
-              </figure>
-              <figure>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={run.characterStillUrl} alt="Generated still" className="thumb" />
-                <figcaption className="tag">what came back</figcaption>
-              </figure>
-            </div>
-          ) : null}
         </>
       ),
     },
@@ -383,8 +372,8 @@ export default function RunDeck({
           ? "480p by default. Promote a take you already like to 720p, reusing the same prompt and inputs."
           : "The render runs on your Higgsfield subscription, so this step is a handoff. Take the prompt and the two files across, generate, then bring the MP4 back.",
       done: rendered,
-      ready: hasClip && hasStill && Boolean(prompt),
-      needs: "Needs the source clip, the character still and a prompt.",
+      ready: Boolean(prompt),
+      needs: "Needs a prompt, which composes itself from the character and the beat sheet.",
       body:
         provider === "fal" ? (
           <RenderStep run={run} onChanged={refresh} />
@@ -698,41 +687,3 @@ function Finish({
   );
 }
 
-/**
- * The product photo used for compositing. Kalodata supplies one automatically for picked
- * products; this is the override for when that image is missing or too poor to work from.
- */
-function ProductPhoto({
-  run,
-  photo,
-  onUploaded,
-}: {
-  run: RunWithProduct;
-  photo: string | null;
-  onUploaded: (url: string) => void;
-}) {
-  return (
-    <div className="rows">
-      <div className="row">
-        <span className="row-key">Product photo</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="" className="candidate-img" />
-          ) : null}
-          <span className="tag">
-            {run.product.uploadedImageUrl
-              ? "uploaded by hand"
-              : run.product.imageUrl
-                ? "from Kalodata"
-                : "none yet, the composite needs one"}
-          </span>
-        </span>
-        <span />
-      </div>
-      <div className="row" style={{ gridTemplateColumns: "1fr" }}>
-        <UploadStep runId={run.id} kind="product" currentUrl={null} onUploaded={onUploaded} />
-      </div>
-    </div>
-  );
-}
