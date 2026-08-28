@@ -39,6 +39,10 @@ export type Character = {
   hair: string;
   outfit: string;
   product: string;
+  /* Chosen during casting. Optional because characters cast before voices existed do not
+     have one, and a run without a voice still works: the original audio is simply used. */
+  voiceId?: string | null;
+  voiceName?: string | null;
 };
 
 /**
@@ -183,6 +187,10 @@ export const runs = pgTable("runs", {
     only ever count spend, which made a cost line look like progress toward a revenue goal.
   */
   commissionEarned: integer("commission_earned"),
+
+  /* The re-voiced audio track, converted from the original take. Dropped into CapCut
+     alongside the render instead of the raw voice. */
+  voicedAudioUrl: text("voiced_audio_url"),
 
   posted: boolean("posted").notNull().default(false),
   postedAt: timestamp("posted_at", { withTimezone: true }),

@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "voiced_audio_url" text;

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import type { Character, Run } from "@/db/schema";
+import VoicePicker from "./VoicePicker";
 
-const FIELDS: { key: keyof Character; label: string }[] = [
+type TextField = "age" | "gender" | "profession" | "build" | "hair" | "outfit" | "product";
+
+const FIELDS: { key: TextField; label: string }[] = [
   { key: "age", label: "Age" },
   { key: "gender", label: "Gender" },
   { key: "profession", label: "Job" },
@@ -40,7 +43,7 @@ export default function CharacterBlock({
   onSaved: (character: Character) => void;
 }) {
   const [character, setCharacter] = useState<Character>(run.character ?? EMPTY);
-  const [busy, setBusy] = useState<"generate" | keyof Character | "save" | null>(null);
+  const [busy, setBusy] = useState<"generate" | TextField | "save" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
 
@@ -93,7 +96,7 @@ export default function CharacterBlock({
     setBusy(null);
   }
 
-  async function reroll(field: keyof Character) {
+  async function reroll(field: TextField) {
     setBusy(field);
     const data = await call({ action: "reroll", field, character });
     if (data && data.value !== undefined) set(field, data.value);
@@ -166,6 +169,14 @@ export default function CharacterBlock({
           the hook in on-screen text.
         </p>
       ) : null}
+
+      <VoicePicker
+        character={character}
+        onChange={(voiceId, voiceName) => {
+          setCharacter((c) => ({ ...c, voiceId, voiceName }));
+          setDirty(true);
+        }}
+      />
 
       {error ? <p className="note note-rec">{error}</p> : null}
 

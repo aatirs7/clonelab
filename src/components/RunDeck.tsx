@@ -22,6 +22,7 @@ import HandoffStep from "./HandoffStep";
 import RenderStep from "./RenderStep";
 import SignOutButton from "./SignOutButton";
 import UploadStep from "./UploadStep";
+import VoiceStep from "./VoiceStep";
 
 /**
  * The run, as a deck: every step listed down the rail, one step in front of you at a time.
@@ -303,10 +304,28 @@ export default function RunDeck({
         ),
     },
     {
+      key: "voice",
+      label: "Voice",
+      title: "Convert the voice",
+      hint: "Speech to speech, never text to speech. Your take drives the lip motion in the render, so the conversion has to keep your exact timing. Generated speech would make up its own and drift out of sync.",
+      done: Boolean(run.voicedAudioUrl),
+      ready: rendered,
+      needs: "Nothing has finished rendering yet.",
+      body: (
+        <VoiceStep
+          run={run}
+          onConverted={(url) => {
+            patch({ voicedAudioUrl: url });
+            refresh();
+          }}
+        />
+      ),
+    },
+    {
       key: "finish",
       label: "Finish",
       title: "Finish in CapCut",
-      hint: "Relay the original audio over the render. Timing is one to one, so it drops straight on with no nudging. Add the AI-generated label in the TikTok editor at post time, every time.",
+      hint: "Drop the audio over the render. Timing is one to one either way, so it lands with no nudging. Add the AI-generated label in the TikTok editor at post time, every time.",
       done: run.posted,
       ready: rendered || run.status === "failed",
       needs: "Nothing has finished rendering yet.",

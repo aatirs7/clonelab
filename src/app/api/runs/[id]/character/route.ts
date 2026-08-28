@@ -15,6 +15,8 @@ const characterSchema = z.object({
   hair: z.string(),
   outfit: z.string(),
   product: z.string(),
+  voiceId: z.string().nullish(),
+  voiceName: z.string().nullish(),
 });
 
 const body = z.union([
